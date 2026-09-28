@@ -1,0 +1,16 @@
+{
+  "totalImages": 35,
+  "types": {
+    "Áo bà ba": 8,
+    "Áo dài": 7,
+    "Áo giao lĩnh": 5,
+    "Áo ngũ thân tay chẽn": 7,
+    "Áo yếm": 8
+  },
+  "ignoredFiles": [],
+  "notes": [
+    "Labels inferred from names only; all rows default to draft.",
+    "Review mappings, especially xanh, before approving records.",
+    "Existing database rows are not overwritten or deleted. Renaming files creates new import keys."
+  ]
+}

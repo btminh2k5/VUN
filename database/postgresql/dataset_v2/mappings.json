@@ -1,0 +1,17 @@
+{
+  "types": {
+    "aobaba": "Áo bà ba",
+    "aodai": "Áo dài",
+    "aogiaolinh": "Áo giao lĩnh",
+    "aonguthan_taychen": "Áo ngũ thân tay chẽn",
+    "aoyem": "Áo yếm"
+  },
+  "audiences": { "Nu": "Nữ", "Nam": "Nam" },
+  "colors": {
+    "do": "Đỏ", "hong": "Hồng", "trang": "Trắng", "tim": "Tím",
+    "nau": "Nâu", "cam": "Cam", "be": "Be", "vang": "Vàng",
+    "vangtuoi": "Vàng tươi", "vangbe": "Vàng be",
+    "xanhlam": "Xanh lam", "xanhluc": "Xanh lục",
+    "xanhla": "Xanh lá", "xanhcom": "Xanh cốm", "xanh": "Xanh (chưa xác định sắc độ)"
+  }
+}
