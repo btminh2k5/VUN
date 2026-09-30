@@ -2,17 +2,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createHash } from 'node:crypto';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
-const dataset = path.join(root, 'dataset');
-const images = path.join(root, 'public/images/dataset');
+// One canonical image directory, also served directly by Vite.
+const dataset = path.join(root, 'public/images/dataset');
 const maps = JSON.parse(fs.readFileSync(path.join(here, 'mappings.json'), 'utf8'));
 const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
   e.isDirectory() ? walk(path.join(dir, e.name)) : e.isFile() ? [path.join(dir, e.name)] : []);
 const quote = s => "'" + s.replaceAll("'", "''") + "'";
-const hash = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const records = [];
 const issues = [];
 const ignored = [];
@@ -25,15 +23,11 @@ for (const file of walk(dataset).sort()) {
   if (parts.length !== 3 || !maps.audiences[audienceCode] || !maps.types[typeCode] || !maps.colors[colorCode]) {
     issues.push(relative); continue;
   }
-  const destination = path.join(images, ...parts);
-  if (fs.existsSync(destination) && hash(destination) !== hash(file)) {
-    issues.push(`${relative}: destination contains different image; resolve manually`); continue;
-  }
-  records.push({ file, destination, relative, typeCode,
+  records.push({ relative, typeCode,
     type: maps.types[typeCode], audience: maps.audiences[audienceCode], color: maps.colors[colorCode] });
 }
-// Validate everything before copying images or replacing generated SQL.
-if (issues.length) throw new Error('No import generated. Fix mappings/layout/image conflicts:\n' + issues.join('\n'));
+// Validate everything before replacing generated SQL. Never copy or modify images.
+if (issues.length) throw new Error('No import generated. Fix mappings/layout:\n' + issues.join('\n'));
 if (!records.length) throw new Error('No recognized images found.');
 const types = [...new Set(records.map(r => r.typeCode))];
 const sql = [
@@ -46,6 +40,8 @@ const sql = [
   'ON CONFLICT (code) DO NOTHING;'
 ];
 for (const r of records) {
+  // Preserve dataset_path as a logical import key, not a repository file path.
+  // Existing databases use this key; changing it would create duplicate rows.
   const url = '/images/dataset/' + r.relative.split('/').map(encodeURIComponent).join('/');
   sql.push(`INSERT INTO wardrobe.garment_variants (garment_type_id, dataset_path, name, audience, color, image_url)
 SELECT id, ${quote('dataset/' + r.relative)}, ${quote(`${r.type} ${r.audience.toLowerCase()} màu ${r.color.toLowerCase()}`)}, ${quote(r.audience)}, ${quote(r.color)}, ${quote(url)}
@@ -53,10 +49,6 @@ FROM wardrobe.garment_types WHERE code = ${quote(r.typeCode)}
 ON CONFLICT (dataset_path) DO NOTHING;`);
 }
 sql.push('COMMIT;', '');
-for (const r of records) {
-  fs.mkdirSync(path.dirname(r.destination), { recursive: true });
-  if (!fs.existsSync(r.destination)) fs.copyFileSync(r.file, r.destination, fs.constants.COPYFILE_EXCL);
-}
 fs.writeFileSync(path.join(here, '02_import_dataset.sql'), sql.join('\n'), 'utf8');
 const report = {
   totalImages: records.length,

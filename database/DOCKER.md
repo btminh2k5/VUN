@@ -89,7 +89,7 @@ Nếu lần khởi tạo gặp lỗi, đọc logs và sửa nguyên nhân trư�
 
 ## 6. Bàn giao lên GitHub
 
-Giữ docker-compose.yml, .env.example, database/, dataset/ và public/images/dataset/. Database chỉ lưu URL ảnh; PostgreSQL không phục vụ ảnh. Ảnh vẫn do ứng dụng web phục vụ từ public/images/dataset, không cần mount vào container database.
+Giữ docker-compose.yml, .env.example, database/ và public/images/dataset/. Chỉ có một bộ ảnh tại public/images/dataset; không cần thư mục dataset/ riêng ở gốc. Database chỉ lưu URL ảnh; PostgreSQL không phục vụ ảnh. Ảnh do ứng dụng web phục vụ từ public/images/dataset, không cần mount vào container database. Khóa dataset_path trong SQL giữ nguyên để tương thích dữ liệu đã nhập; không cần cập nhật database khi bỏ thư mục ảnh trùng.
 
 Đồng đội clone repository, tạo .env rồi chạy docker compose up -d sẽ khởi tạo cùng schema và dữ liệu từ SQL. Không commit .env, thư mục dữ liệu PostgreSQL hoặc volume Docker.
 
