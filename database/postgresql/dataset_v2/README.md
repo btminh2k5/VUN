@@ -1,5 +1,7 @@
 # Nhập dataset theo loại áo và màu
 
+**Chạy tự động bằng Docker:** xem [hướng dẫn Docker](../../DOCKER.md). Compose ở thư mục gốc tự nạp schema, dataset và thông tin văn hóa vào database riêng `vietfashion` khi khởi tạo lần đầu. Các bước pgAdmin dưới đây là cách chạy thủ công.
+
 Đây là cấu trúc mới dành cho dataset hiện tại. Dùng schema `wardrobe` trong database `VUNdata` để không đụng bảng `public.outfits` bạn đã tạo hoặc các bảng cũ. Không xóa hay tự chuyển dữ liệu đã nhập trước đó.
 
 ## Bạn làm ngay trong pgAdmin
