@@ -30,6 +30,7 @@ import { Step4CompleteOutfit } from './components/Step4CompleteOutfit';
 import { VietFashionDatasetModal } from './components/VietFashionDatasetModal';
 import { LookbookModal } from './components/LookbookModal';
 import { CulturalGuidelinesModal } from './components/CulturalGuidelinesModal';
+import { CulturalAnimatedBackground } from './components/CulturalAnimatedBackground';
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -114,10 +115,13 @@ export default function App() {
   const isCurrentOutfitSaved = savedOutfits.some((o) => o.id === activeOutfit.id);
 
   return (
-    <div className="min-h-screen bg-stone-100/70 text-stone-900 flex flex-col font-['Be_Vietnam_Pro',sans-serif]">
+    <div className="relative min-h-screen text-stone-900 flex flex-col font-['Be_Vietnam_Pro',sans-serif] overflow-x-hidden">
+      {/* Animated Cultural Background: Đông Sơn Drum, Floating Petals, Silk Waves */}
+      <CulturalAnimatedBackground />
+
       {/* Top Application Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200/80 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo & Brand */}
           <div
             onClick={() => setCurrentStep(1)}
@@ -182,16 +186,18 @@ export default function App() {
       </header>
 
       {/* 4-Step Process Guide Header matching user request and screenshot */}
-      <StepHeader
-        currentStep={currentStep}
-        onSelectStep={(step) => {
-          setCurrentStep(step);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
+      <div className="relative z-10">
+        <StepHeader
+          currentStep={currentStep}
+          onSelectStep={(step) => {
+            setCurrentStep(step);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      </div>
 
       {/* Main Dynamic Step Body */}
-      <main className="flex-1 max-w-6xl mx-auto px-4 pb-12 w-full">
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 w-full">
         {currentStep === 1 && (
           <div className="py-2">
             <Step1InputForm
@@ -288,8 +294,8 @@ export default function App() {
       />
 
       {/* App Footer */}
-      <footer className="bg-white border-t border-stone-200 mt-auto py-6">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+      <footer className="relative z-10 bg-white/95 backdrop-blur-md border-t border-stone-200 mt-auto py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-red-700 text-white flex items-center justify-center font-serif text-[10px]">
               B

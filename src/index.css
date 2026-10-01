@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinReverseSlow {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 160s linear infinite;
+}
+
+.animate-spin-reverse-slow {
+  animation: spinReverseSlow 200s linear infinite;
+}

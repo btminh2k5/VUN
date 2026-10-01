@@ -92,12 +92,12 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Top Banner & Summary Card */}
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden p-6">
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden p-6 sm:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: 3D / Realistic Mannequin Studio */}
-          <div className="lg:col-span-6 h-[540px]">
+          <div className="lg:col-span-6 h-[580px]">
             <Mannequin3DViewer
               outfit={outfit}
               selectedItem={selectedItemForViewer}
