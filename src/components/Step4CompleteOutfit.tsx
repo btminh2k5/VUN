@@ -45,11 +45,9 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   const [aiResponse, setAiResponse] = useState<any>(null);
   const [showAiAdvisor, setShowAiAdvisor] = useState(false);
 
-  // Group items by category
+  // Group items by category - focusing on suggested garment
   const mainGarment = outfit.items.find((i) => i.category === 'main');
   const accessoryItems = outfit.items.filter((i) => i.category === 'accessory');
-  const footwearItem = outfit.items.find((i) => i.category === 'footwear');
-  const pantsItem = outfit.items.find((i) => i.category === 'pants');
   const headwearItem = outfit.items.find((i) => i.category === 'headwear');
 
   const handleShare = async () => {
@@ -183,94 +181,6 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
                         {mainGarment.name}
                       </h4>
                       <p className="text-[11px] text-red-700 font-medium">Trang phục chính · {mainGarment.region}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-xs text-stone-500 group-hover:text-stone-900 font-medium flex items-center gap-1"
-                  >
-                    <span>Chi tiết</span>
-                    <Info className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Pants */}
-              {pantsItem && (
-                <div
-                  onClick={() => onInspectItem(pantsItem)}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-stone-50 hover:bg-amber-50/80 border border-stone-200 cursor-pointer transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={pantsItem.imageUrl}
-                      alt={pantsItem.name}
-                      className="w-10 h-10 rounded-xl object-cover border border-stone-200"
-                    />
-                    <div>
-                      <h4 className="text-xs font-semibold text-stone-900 group-hover:text-red-700 transition">
-                        {pantsItem.name}
-                      </h4>
-                      <p className="text-[11px] text-stone-500">Phần dưới</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-xs text-stone-500 group-hover:text-stone-900 font-medium flex items-center gap-1"
-                  >
-                    <span>Chi tiết</span>
-                    <Info className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Accessories (Bag, scarf, fan) */}
-              {accessoryItems.map((acc) => (
-                <div
-                  key={acc.id}
-                  onClick={() => onInspectItem(acc)}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-stone-50 hover:bg-amber-50/80 border border-stone-200 cursor-pointer transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={acc.imageUrl}
-                      alt={acc.name}
-                      className="w-10 h-10 rounded-xl object-cover border border-stone-200"
-                    />
-                    <div>
-                      <h4 className="text-xs font-semibold text-stone-900 group-hover:text-red-700 transition">
-                        {acc.name}
-                      </h4>
-                      <p className="text-[11px] text-stone-500">Phụ kiện</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-xs text-stone-500 group-hover:text-stone-900 font-medium flex items-center gap-1"
-                  >
-                    <span>Chi tiết</span>
-                    <Info className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-
-              {/* Footwear */}
-              {footwearItem && (
-                <div
-                  onClick={() => onInspectItem(footwearItem)}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-stone-50 hover:bg-amber-50/80 border border-stone-200 cursor-pointer transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={footwearItem.imageUrl}
-                      alt={footwearItem.name}
-                      className="w-10 h-10 rounded-xl object-cover border border-stone-200"
-                    />
-                    <div>
-                      <h4 className="text-xs font-semibold text-stone-900 group-hover:text-red-700 transition">
-                        {footwearItem.name}
-                      </h4>
-                      <p className="text-[11px] text-stone-500">Giày / Dép</p>
                     </div>
                   </div>
                   <button

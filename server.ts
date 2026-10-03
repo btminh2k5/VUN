@@ -3,13 +3,47 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dbService } from './src/server/db.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
 app.use(express.json());
+
+// Explicitly serve public assets (including /images/dataset/...)
+app.use(express.static(path.resolve(__dirname, 'public')));
+
+// Database status endpoint
+app.get('/api/database/status', async (_req, res) => {
+  try {
+    const status = await dbService.getStatus();
+    return res.json({ success: true, ...status });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Database catalog endpoint (returns all 35 real garments & photos)
+app.get('/api/database/catalog', async (_req, res) => {
+  try {
+    const items = await dbService.getCatalog();
+    const status = await dbService.getStatus();
+    return res.json({
+      success: true,
+      count: items.length,
+      connected: status.connected,
+      items
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // API route for AI Styling Advice with Gemini
 app.post('/api/ai-styling', async (req, res) => {

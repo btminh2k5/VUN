@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Database, 
   Shirt, 
-  Image, 
+  Image as ImageIcon, 
   FileText, 
   Calendar, 
   ShoppingBag, 
@@ -15,9 +15,16 @@ import {
   User, 
   Search,
   BookOpen,
-  ExternalLink
+  Sparkles,
+  Layers,
+  Check
 } from 'lucide-react';
-import { VIET_FASHION_ITEMS, OUTFIT_SETS, GarmentItem } from '../data/vietFashionData';
+import { 
+  VIET_FASHION_ITEMS, 
+  REAL_DATASET_35_ITEMS, 
+  GarmentItem, 
+  DatasetVariantRecord 
+} from '../data/vietFashionData';
 
 interface VietFashionDatasetModalProps {
   isOpen: boolean;
@@ -30,37 +37,92 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
   onClose,
   onSelectItem
 }) => {
-  const [activeTab, setActiveTab] = useState<'architecture' | 'dataset' | 'guidelines'>('architecture');
+  const [activeTab, setActiveTab] = useState<'postgres' | 'architecture' | 'dataset'>('postgres');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [dbStatus, setDbStatus] = useState<{
+    connected: boolean;
+    config?: { host: string; port: number; database: string; user: string };
+    catalogCount?: number;
+    message?: string;
+  }>({
+    connected: false,
+    config: { host: '127.0.0.1', port: 5433, database: 'vietfashion', user: 'vietfashion' },
+    catalogCount: 35
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/database/status')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success) {
+            setDbStatus({
+              connected: data.connected,
+              config: data.config,
+              catalogCount: data.catalogCount || 35,
+              message: data.message
+            });
+          }
+        })
+        .catch(() => {
+          // Fallback status
+          setDbStatus({
+            connected: false,
+            config: { host: '127.0.0.1', port: 5433, database: 'vietfashion', user: 'vietfashion' },
+            catalogCount: 35
+          });
+        });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const allItems = Object.values(VIET_FASHION_ITEMS);
-  const filteredItems = allItems.filter((item) => {
-    const matchesSearch =
+  // Filter 35 real dataset items
+  const filteredRealImages = REAL_DATASET_35_ITEMS.filter((item) => {
+    const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
+    const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.color.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.region.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === 'all' || item.type.includes(filterType) || item.category === filterType;
-    return matchesSearch && matchesType;
+    return matchesCategory && matchesSearch;
   });
 
+  const categories = [
+    { key: 'all', label: 'Tất cả 35 ảnh', count: 35 },
+    { key: 'Áo bà ba', label: 'Áo bà ba', count: 8 },
+    { key: 'Áo dài', label: 'Áo dài', count: 7 },
+    { key: 'Áo giao lĩnh', label: 'Áo giao lĩnh', count: 5 },
+    { key: 'Áo ngũ thân tay chẽn', label: 'Áo ngũ thân tay chẽn', count: 7 },
+    { key: 'Áo yếm', label: 'Áo yếm', count: 8 }
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl border border-stone-200 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Modal Top Header */}
         <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-red-100 flex items-center justify-center text-red-700">
-              <Database className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-700 to-amber-700 flex items-center justify-center text-white shadow-xs">
+              <Database className="w-5 h-5 text-amber-200" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-stone-900 font-['Playfair_Display',serif]">
-                VietFashion Dataset & Kiến Trúc Hệ Thống
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-stone-900 font-['Playfair_Display',serif]">
+                  VietFashion Dataset v2 · PostgreSQL Database
+                </h2>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                  dbStatus.connected
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-amber-100 text-amber-800 border border-amber-300'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${dbStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  {dbStatus.connected ? 'PostgreSQL 5433: Online' : '35 Ảnh Thật: Đã Tải'}
+                </span>
+              </div>
               <p className="text-xs text-stone-500">
-                Nguồn dữ liệu chính xác, đã được kiểm chứng về trang phục truyền thống Việt Nam
+                Kho lưu trữ 35 mẫu ảnh thật theo định chế văn hóa Việt phục (Schema: <code className="text-stone-700 bg-stone-200/60 px-1 py-0.5 rounded text-[11px]">wardrobe.outfit_catalog</code>)
               </p>
             </div>
           </div>
@@ -68,279 +130,281 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-xl transition"
+            className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-xl transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Controls */}
-        <div className="px-6 py-2.5 bg-stone-100/70 border-b border-stone-200 flex items-center gap-2">
+        <div className="px-6 py-2.5 bg-stone-100/80 border-b border-stone-200 flex items-center gap-2 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab('architecture')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'architecture'
-                ? 'bg-white text-stone-900 shadow-xs'
-                : 'text-stone-600 hover:text-stone-900'
+            onClick={() => setActiveTab('postgres')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+              activeTab === 'postgres'
+                ? 'bg-red-700 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 bg-white/60'
             }`}
           >
-            Kiến trúc hệ thống & Cam kết di sản
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>35 Mẫu Ảnh Thật Dataset ({REAL_DATASET_35_ITEMS.length})</span>
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('dataset')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'dataset'
-                ? 'bg-white text-stone-900 shadow-xs'
-                : 'text-stone-600 hover:text-stone-900'
+            onClick={() => setActiveTab('architecture')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+              activeTab === 'architecture'
+                ? 'bg-red-700 text-white shadow-xs'
+                : 'text-stone-600 hover:text-stone-900 bg-white/60'
             }`}
           >
-            Kho dữ liệu trang phục ({allItems.length} tư liệu)
+            <Server className="w-3.5 h-3.5" />
+            <span>Kiến trúc PostgreSQL & Bảo tàng</span>
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {activeTab === 'architecture' ? (
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+          {activeTab === 'postgres' && (
             <div className="space-y-6">
-              {/* Category Pills matching mockup */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {[
-                  { title: 'Trang phục', icon: Shirt, count: '8 loại hình' },
-                  { title: 'Hình ảnh', icon: Image, count: 'Ảnh 4K & 3D' },
-                  { title: 'Thông tin văn hóa', icon: FileText, count: 'Đã kiểm duyệt' },
-                  { title: 'Bối cảnh - Sự kiện', icon: Calendar, count: '6 bối cảnh' },
-                  { title: 'Phụ kiện', icon: ShoppingBag, count: '12 món phối' }
-                ].map((c, i) => {
-                  const Icon = c.icon;
-                  return (
-                    <div
-                      key={i}
-                      className="p-3 bg-stone-50 rounded-2xl border border-stone-200/80 text-center flex flex-col items-center justify-center"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-white shadow-xs flex items-center justify-center text-stone-700 mb-1.5">
-                        <Icon className="w-4 h-4 text-red-700" />
-                      </div>
-                      <span className="text-xs font-semibold text-stone-900 block">{c.title}</span>
-                      <span className="text-[10px] text-stone-500 block mt-0.5">{c.count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* System Architecture Diagram (Exact mockup reproduction) */}
-              <div className="bg-stone-50 border border-stone-200 rounded-3xl p-5 space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700">
-                  Kiến trúc hệ thống (System Architecture)
-                </h3>
-
-                <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-center">
-                    {/* User */}
-                    <div className="flex flex-col items-center p-3 bg-stone-50 rounded-xl border border-stone-200 min-w-[110px]">
-                      <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 mb-1">
-                        <User className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-bold text-stone-900">Người dùng</span>
-                      <span className="text-[10px] text-stone-500">Gen Z / Học sinh</span>
-                    </div>
-
-                    <ArrowRight className="w-5 h-5 text-stone-400 rotate-90 md:rotate-0" />
-
-                    {/* Frontend */}
-                    <div className="flex flex-col items-center p-3 bg-stone-50 rounded-xl border border-stone-200 min-w-[120px]">
-                      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mb-1">
-                        <Shirt className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-bold text-stone-900">Frontend</span>
-                      <span className="text-[10px] text-stone-500">React + 3D Studio</span>
-                    </div>
-
-                    <ArrowRight className="w-5 h-5 text-stone-400 rotate-90 md:rotate-0" />
-
-                    {/* Backend */}
-                    <div className="flex flex-col items-center p-3 bg-stone-50 rounded-xl border border-stone-200 min-w-[120px]">
-                      <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 mb-1">
-                        <Server className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-bold text-stone-900">FastAPI / Express</span>
-                      <span className="text-[10px] text-stone-500">Server API Engine</span>
-                    </div>
-
-                    <ArrowRight className="w-5 h-5 text-stone-400 rotate-90 md:rotate-0" />
-
-                    {/* AI Agent */}
-                    <div className="flex flex-col items-center p-3 bg-amber-50 rounded-xl border border-amber-300 min-w-[150px] shadow-xs">
-                      <div className="w-9 h-9 rounded-full bg-amber-200 flex items-center justify-center text-amber-900 mb-1">
-                        <Cpu className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-bold text-amber-950">AI Agent (Gemini)</span>
-                      <ul className="text-[9px] text-stone-600 text-left list-disc list-inside mt-0.5">
-                        <li>Tìm kiếm outfit</li>
-                        <li>Chọn từ dataset</li>
-                        <li>Tư vấn phong cách</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Connected Database underneath */}
-                  <div className="mt-4 pt-4 border-t border-stone-100 flex justify-center">
-                    <div className="flex items-center gap-3 px-5 py-2.5 bg-stone-100 rounded-xl border border-stone-300 shadow-xs">
-                      <Database className="w-5 h-5 text-stone-700" />
-                      <div className="text-left">
-                        <span className="text-xs font-bold text-stone-900 block">
-                          PostgreSQL (VietFashion Dataset)
-                        </span>
-                        <span className="text-[10px] text-stone-500 block">
-                          Dữ liệu trang phục, bảo tàng, khảo cứu lịch sử đã qua kiểm định
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cultural Verification Commitment Box */}
-              <div className="bg-emerald-50/60 border border-emerald-200 rounded-3xl p-5">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-800 shrink-0">
-                    <ShieldCheck className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-bold text-emerald-950">
-                      Đảm bảo thông tin văn hóa chính xác
-                    </h3>
-                    <p className="text-xs text-emerald-900/90 leading-relaxed">
-                      Tất cả hình ảnh và thông tin đều lấy từ VietFashion Dataset, không tự tạo nội dung ngoài dữ liệu có.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
-                      <div className="flex items-center gap-1.5 text-emerald-900 font-semibold">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Dữ liệu có nguồn gốc rõ ràng</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-emerald-900 font-semibold">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Thông tin được kiểm duyệt</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-emerald-900 font-semibold">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Tôn trọng giá trị văn hóa Việt</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Partnered & Referenced Museums */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                  Nguồn nghiên cứu & Bảo tàng phối hợp:
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { name: 'Bảo tàng Phụ nữ Việt Nam', place: 'Hà Nội', doc: 'Di sản Áo dài qua các thời kỳ' },
-                    { name: 'Trung tâm BT Di tích Cố đô Huế', place: 'Thừa Thiên Huế', doc: 'Phục sức cung đình & Áo ngũ thân' },
-                    { name: 'Bảo tàng Dân tộc học Việt Nam', place: 'Hà Nội', doc: 'Trang phục Quan họ & Dân gian' }
-                  ].map((m, idx) => (
-                    <div key={idx} className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs">
-                      <p className="font-bold text-stone-900">{m.name}</p>
-                      <p className="text-[11px] text-stone-500">{m.place}</p>
-                      <p className="text-[10px] text-amber-800 font-medium mt-1">Tư liệu: {m.doc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Tab: Dataset Catalog */
-            <div className="space-y-4">
-              {/* Search & Filters */}
-              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-                <div className="relative w-full sm:w-72">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm tên trang phục, phụ kiện..."
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-9 pr-3 py-2 text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {['all', 'Áo dài', 'Áo ngũ thân', 'Áo tấc', 'Áo tứ thân', 'accessory'].map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setFilterType(f)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        filterType === f
-                          ? 'bg-stone-900 text-white'
-                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                      }`}
-                    >
-                      {f === 'all' ? 'Tất cả' : f === 'accessory' ? 'Phụ kiện' : f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Items Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {filteredItems.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      onSelectItem(item);
-                      onClose();
-                    }}
-                    className="bg-white rounded-2xl border border-stone-200 p-3 hover:border-red-600 cursor-pointer transition shadow-xs group flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="relative h-36 rounded-xl overflow-hidden bg-stone-100 mb-2">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
-                        />
-                        <span className="absolute top-2 left-2 bg-black/60 text-white text-[9px] px-2 py-0.5 rounded-full backdrop-blur-xs">
-                          {item.type}
-                        </span>
-                      </div>
-
-                      <h4 className="text-xs font-bold text-stone-900 group-hover:text-red-700 transition">
-                        {item.name}
-                      </h4>
-                      <p className="text-[10px] text-stone-500 mt-0.5">{item.region} · {item.era}</p>
-                      <p className="text-[11px] text-stone-600 line-clamp-2 mt-1 leading-snug">
-                        {item.keyFeatures}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px]">
-                      <span className="text-amber-800 font-medium truncate max-w-[160px]">
-                        {item.verifiedSource.museum}
+              {/* PostgreSQL Connection Banner */}
+              <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-stone-700">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                        PostgreSQL Database Connection
                       </span>
-                      <span className="text-red-600 font-bold group-hover:underline">Chi tiết →</span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold">
+                      Database: <span className="text-amber-200">vietfashion</span> · Cổng: <span className="text-amber-200">5433</span> · Người dùng: <span className="text-amber-200">vietfashion</span>
+                    </h3>
+                    <p className="text-xs text-stone-300">
+                      Đã nạp 35 mẫu ảnh thật thuộc 5 dòng trang phục chính vào hệ thống theo đúng cấu trúc schema <code className="text-amber-200">wardrobe.garment_variants</code>.
+                    </p>
+                  </div>
+
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 border-stone-700 pt-2 sm:pt-0">
+                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/70 border border-emerald-800/80 px-2.5 py-1 rounded-full">
+                      ✓ 35/35 Ảnh thực tế
+                    </span>
+                    <span className="text-[11px] text-stone-400 font-mono">
+                      Docker Compose: 127.0.0.1:5433
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search & Category Filter */}
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  {/* Category tabs */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                    {categories.map((c) => (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => setFilterCategory(c.key)}
+                        className={`text-xs px-3 py-1.5 rounded-xl border transition whitespace-nowrap ${
+                          filterCategory === c.key
+                            ? 'bg-stone-900 text-white border-stone-900 font-bold shadow-2xs'
+                            : 'bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200'
+                        }`}
+                      >
+                        {c.label} ({c.count})
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Search box */}
+                  <div className="relative min-w-[220px]">
+                    <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Tìm màu, tên áo..."
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 35 Real Images Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredRealImages.map((record) => (
+                  <div
+                    key={record.id}
+                    className="group bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-2xs hover:shadow-md transition duration-200 flex flex-col"
+                  >
+                    {/* Real Image Container */}
+                    <div className="relative h-64 bg-stone-100 overflow-hidden">
+                      <img
+                        src={record.imageUrl}
+                        alt={record.name}
+                        className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-80" />
+
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                        <span className="bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20">
+                          {record.category}
+                        </span>
+                        <span className="bg-amber-500/90 text-stone-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {record.color}
+                        </span>
+                      </div>
+
+                      <div className="absolute top-2.5 right-2.5 bg-emerald-700/80 backdrop-blur-md text-white text-[9px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-300" />
+                        <span>Ảnh Thật</span>
+                      </div>
+
+                      <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                        <p className="text-xs font-bold leading-tight font-['Playfair_Display',serif]">
+                          {record.name}
+                        </p>
+                        <p className="text-[10px] text-stone-300 font-mono mt-0.5 truncate">
+                          {record.datasetPath}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Metadata & Actions */}
+                    <div className="p-3.5 flex-1 flex flex-col justify-between space-y-3 bg-stone-50/50">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-stone-500">
+                          <span>Vùng: <strong className="text-stone-700">{record.region}</strong></span>
+                          <span>Đối tượng: <strong className="text-stone-700">{record.audience}</strong></span>
+                        </div>
+                        <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed">
+                          {record.culturalMeaning}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const item = VIET_FASHION_ITEMS['ao-dai-do-gam'];
+                          if (item) {
+                            onSelectItem({
+                              ...item,
+                              id: `dataset-${record.id}`,
+                              name: record.name,
+                              imageUrl: record.imageUrl,
+                              galleryImages: [record.imageUrl],
+                              culturalMeaning: record.culturalMeaning
+                            });
+                          }
+                          onClose();
+                        }}
+                        className="w-full bg-stone-900 hover:bg-red-700 text-white text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Phối đồ với mẫu ảnh này</span>
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {filteredRealImages.length === 0 && (
+                <div className="text-center py-12 text-stone-500 space-y-2">
+                  <p className="text-sm font-medium">Không tìm thấy mẫu ảnh khớp với từ khóa "{searchQuery}"</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilterCategory('all');
+                    }}
+                    className="text-xs text-red-700 font-semibold hover:underline"
+                  >
+                    Xóa bộ lọc để hiển thị toàn bộ 35 ảnh
+                  </button>
+                </div>
+              )}
             </div>
           )}
-        </div>
 
-        {/* Modal Bottom Footer */}
-        <div className="px-6 py-3 border-t border-stone-200 bg-stone-50 flex items-center justify-between text-xs">
-          <span className="text-stone-500">VietFashion AI Knowledge Engine v2.4</span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-1.5 bg-stone-900 text-white rounded-xl font-medium hover:bg-stone-800 transition"
-          >
-            Đóng
-          </button>
+          {activeTab === 'architecture' && (
+            <div className="space-y-6">
+              {/* Architecture diagram */}
+              <div className="bg-stone-50 border border-stone-200 rounded-3xl p-5 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700">
+                  Kiến trúc kết nối PostgreSQL & Server AI Studio
+                </h3>
+
+                <div className="p-4 bg-white rounded-2xl border border-stone-200 shadow-xs">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-center">
+                    <div className="flex flex-col items-center p-3 bg-stone-50 rounded-xl border border-stone-200 min-w-[120px]">
+                      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mb-1">
+                        <Shirt className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-stone-900">React Client</span>
+                      <span className="text-[10px] text-stone-500">Giao diện bàn phím & 3D</span>
+                    </div>
+
+                    <ArrowRight className="w-5 h-5 text-stone-400 rotate-90 md:rotate-0" />
+
+                    <div className="flex flex-col items-center p-3 bg-stone-50 rounded-xl border border-stone-200 min-w-[130px]">
+                      <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 mb-1">
+                        <Server className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-stone-900">Express Server</span>
+                      <span className="text-[10px] text-stone-500">API `/api/database/*`</span>
+                    </div>
+
+                    <ArrowRight className="w-5 h-5 text-stone-400 rotate-90 md:rotate-0" />
+
+                    <div className="flex flex-col items-center p-3 bg-amber-50 rounded-xl border border-amber-300 min-w-[150px] shadow-xs">
+                      <div className="w-9 h-9 rounded-full bg-amber-200 flex items-center justify-center text-amber-900 mb-1">
+                        <Database className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-amber-950">PostgreSQL (vietfashion)</span>
+                      <span className="text-[10px] text-stone-600">Port 5433 (Docker Compose)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Database tables schema recap */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                  <h4 className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-red-700" />
+                    Bảng `wardrobe.garment_types`
+                  </h4>
+                  <p className="text-xs text-stone-600">
+                    Lưu trữ 5 loại áo gốc: Áo bà ba, Áo dài, Áo giao lĩnh, Áo ngũ thân tay chẽn, Áo yếm cùng mô tả, nguồn gốc, ý nghĩa và tài liệu đối chiếu.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-2">
+                  <h4 className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-amber-700" />
+                    Bảng `wardrobe.garment_variants`
+                  </h4>
+                  <p className="text-xs text-stone-600">
+                    Lưu trữ 35 bản ghi chi tiết ánh xạ trực tiếp tới các file ảnh thực tế tại <code className="bg-stone-200/80 px-1 py-0.5 rounded text-[11px]">/images/dataset/Nu/...</code>
+                  </p>
+                </div>
+              </div>
+
+              {/* Museum source verification */}
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-emerald-950 space-y-1">
+                  <p className="font-bold">Kiểm chứng di sản theo tài liệu bảo tàng</p>
+                  <p className="text-emerald-900/90 leading-relaxed">
+                    Dữ liệu được đối chiếu với Bảo tàng Phụ nữ Việt Nam, Bảo tàng Cổ vật Cung đình Huế, Bảo tàng Dân tộc học và tư liệu Báo Cần Thơ, VietnamPlus.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

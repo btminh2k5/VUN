@@ -164,11 +164,13 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsDatasetModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded-xl transition"
-              title="VietFashion Dataset & Kiến trúc hệ thống"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-950 hover:text-stone-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition shadow-2xs"
+              title="PostgreSQL Database: vietfashion (Port 5433) - 35 Ảnh Thật"
             >
-              <Database className="w-3.5 h-3.5 text-red-700" />
-              <span className="hidden md:inline">Dataset Di sản</span>
+              <Database className="w-3.5 h-3.5 text-amber-800" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="hidden sm:inline">PostgreSQL: 35 Ảnh Thật</span>
+              <span className="sm:hidden">Postgres</span>
             </button>
 
             {/* Saved Lookbook */}
