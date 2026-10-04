@@ -8,10 +8,12 @@ const root = path.resolve(here, '../../..');
 // One canonical image directory, also served directly by Vite.
 const dataset = path.join(root, 'public/images/dataset');
 const maps = JSON.parse(fs.readFileSync(path.join(here, 'mappings.json'), 'utf8'));
+const stylingMaps = JSON.parse(fs.readFileSync(path.join(here, 'styling-mappings.json'), 'utf8'));
 const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
   e.isDirectory() ? walk(path.join(dir, e.name)) : e.isFile() ? [path.join(dir, e.name)] : []);
 const quote = s => "'" + s.replaceAll("'", "''") + "'";
 const records = [];
+const stylingRecords = [];
 const issues = [];
 const ignored = [];
 for (const file of walk(dataset).sort()) {
@@ -19,6 +21,14 @@ for (const file of walk(dataset).sort()) {
   if (!/\.(jpg|jpeg|png|webp)$/i.test(relative)) { ignored.push(relative); continue; }
   const parts = relative.split('/');
   const [audienceCode, typeCode, filename] = parts;
+  if (audienceCode === 'accessories' || audienceCode === 'footwear') {
+    const category = stylingMaps[audienceCode]?.[typeCode];
+    if (parts.length !== 3 || !category) { issues.push(relative); continue; }
+    // Current filenames carry no reliable color metadata. Leave color NULL.
+    stylingRecords.push({ relative, itemGroup: audienceCode, typeCode, category,
+      name: `${category} — ${path.parse(filename).name}` });
+    continue;
+  }
   const colorCode = path.parse(filename ?? '').name.split('_').at(-1).toLowerCase();
   if (parts.length !== 3 || !maps.audiences[audienceCode] || !maps.types[typeCode] || !maps.colors[colorCode]) {
     issues.push(relative); continue;
@@ -50,8 +60,26 @@ ON CONFLICT (dataset_path) DO NOTHING;`);
 }
 sql.push('COMMIT;', '');
 fs.writeFileSync(path.join(here, '02_import_dataset.sql'), sql.join('\n'), 'utf8');
+const stylingSql = [
+  '-- Generated accessories/footwear labels from directory names; all new rows are draft.',
+  '-- Unknown color, origin and image sources are intentionally left NULL.',
+  '-- Existing rows are preserved on rerun; update metadata separately if needed.',
+  'BEGIN;',
+  'SET LOCAL standard_conforming_strings = on;'
+];
+for (const r of stylingRecords) {
+  const url = '/images/dataset/' + r.relative.split('/').map(encodeURIComponent).join('/');
+  stylingSql.push(`INSERT INTO wardrobe.styling_items (item_group, type_code, category, name, dataset_path, image_url)
+VALUES (${quote(r.itemGroup)}, ${quote(r.typeCode)}, ${quote(r.category)}, ${quote(r.name)}, ${quote('dataset/' + r.relative)}, ${quote(url)})
+ON CONFLICT (dataset_path) DO NOTHING;`);
+}
+stylingSql.push('COMMIT;', '');
+fs.writeFileSync(path.join(here, '06_import_styling_items.sql'), stylingSql.join('\n'), 'utf8');
 const report = {
-  totalImages: records.length,
+  totalImages: records.length + stylingRecords.length,
+  clothingImages: records.length,
+  accessoryImages: stylingRecords.filter(r => r.itemGroup === 'accessories').length,
+  footwearImages: stylingRecords.filter(r => r.itemGroup === 'footwear').length,
   types: Object.fromEntries(types.map(t => [maps.types[t], records.filter(r => r.typeCode === t).length])),
   ignoredFiles: ignored,
   notes: ['Labels inferred from names only; all rows default to draft.',
