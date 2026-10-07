@@ -74,7 +74,7 @@ export const Step1InputForm: React.FC<Step1InputFormProps> = ({
               <span className="block text-[#b62924]">chất riêng bạn.</span>
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-6 text-black/58 sm:text-base sm:leading-7">
-              Chọn dịp, phong cách và gam màu. Hệ thống sẽ tìm một bộ trang phục truyền thống hợp gu, kèm câu chuyện văn hóa của từng món.
+              Chọn dịp, phong cách và gam màu. Khám phá tên trang phục phù hợp, rồi chọn mẫu để xem hình ảnh và thông tin chi tiết.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-black/55">
@@ -82,7 +82,7 @@ export const Step1InputForm: React.FC<Step1InputFormProps> = ({
               <span className="h-1 w-1 rounded-full bg-black/25" />
               <span>Phối màu thông minh</span>
               <span className="h-1 w-1 rounded-full bg-black/25" />
-              <span>Xem outfit 3D</span>
+              <span>Xem gợi ý trang phục</span>
             </div>
           </div>
 

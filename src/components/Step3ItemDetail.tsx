@@ -227,7 +227,7 @@ export const Step3ItemDetail: React.FC<Step3ItemDetailProps> = ({
                 onClick={onProceedToOutfit}
                 className="flex-1 bg-gradient-to-r from-red-700 to-amber-700 hover:from-red-800 hover:to-amber-800 text-white font-semibold py-3.5 px-6 rounded-2xl shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 transition"
               >
-                <span>Xem trọn bộ phối đồ hoàn chỉnh & 3D</span>
+                <span>Xem trọn bộ phối đồ hoàn chỉnh</span>
                 <Eye className="w-4 h-4" />
               </button>
 

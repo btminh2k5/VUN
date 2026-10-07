@@ -1,439 +1,238 @@
 import React, { useState } from 'react';
-import { 
-  Bookmark, 
-  Share2, 
-  Sparkles, 
-  Check, 
-  Eye, 
-  Layers, 
-  ShieldCheck, 
-  Palette, 
-  MessageSquare, 
-  RotateCw,
-  Info,
-  ExternalLink,
-  Heart
-} from 'lucide-react';
-import { OutfitSet, GarmentItem, VIET_FASHION_ITEMS } from '../data/vietFashionData';
-import { Mannequin3DViewer } from './Mannequin3DViewer';
+import { ArrowLeft, Bookmark, Check, ChevronDown, ExternalLink, Palette, RotateCw, Sparkles } from 'lucide-react';
+import { OutfitSet } from '../data/vietFashionData';
 import { MatchResult } from '../utils/matchingEngine';
 
 interface Step4CompleteOutfitProps {
   outfit: OutfitSet;
   matchResult?: MatchResult;
   userQuery?: { context: string; style: string; color: string };
-  onInspectItem: (item: GarmentItem) => void;
   onSaveOutfit: (outfit: OutfitSet) => void;
   isSaved: boolean;
   onOpenDataset: () => void;
+  onBack: () => void;
+}
+
+interface StylingAdvice {
+  advice?: string;
+  genZConcept?: string;
+  stylingTips?: string[];
+  culturalCheck?: {
+    culturalRespectTips?: string;
+    cautions?: string;
+  };
 }
 
 export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   outfit,
-  matchResult,
-  userQuery,
-  onInspectItem,
   onSaveOutfit,
   isSaved,
-  onOpenDataset
+  onOpenDataset,
+  onBack,
 }) => {
-  const [activeAvatar, setActiveAvatar] = useState<'female' | 'male' | 'mannequin'>('female');
-  const [selectedItemForViewer, setSelectedItemForViewer] = useState<GarmentItem | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [aiQuestion, setAiQuestion] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState<any>(null);
-  const [showAiAdvisor, setShowAiAdvisor] = useState(false);
+  const mainGarment = outfit.items.find((item) => item.category === 'main');
+  const [showAdvisor, setShowAdvisor] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [advice, setAdvice] = useState<StylingAdvice | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [adviceError, setAdviceError] = useState('');
 
-  // Group items by category - focusing on suggested garment
-  const mainGarment = outfit.items.find((i) => i.category === 'main');
-  const accessoryItems = outfit.items.filter((i) => i.category === 'accessory');
-  const headwearItem = outfit.items.find((i) => i.category === 'headwear');
-
-  const handleShare = async () => {
+  const askStylist = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isLoading) return;
+    setIsLoading(true);
+    setAdviceError('');
     try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(window.location.href);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2500);
-      }
-    } catch {
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    }
-  };
-
-  const handleAskAiStylist = async () => {
-    setAiLoading(true);
-    try {
-      const res = await fetch('/api/ai-styling', {
+      const response = await fetch('/api/ai-styling', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           context: outfit.context,
           style: outfit.style,
           color: outfit.primaryColor,
-          currentOutfit: {
-            title: outfit.title,
-            items: outfit.items.map((i) => i.name)
-          },
-          question: aiQuestion.trim() || 'Gợi ý cách tạo dáng, chọn layout makeup và phụ kiện Gen Z phù hợp nhất cho set này.'
-        })
+          currentOutfit: { title: outfit.title, items: outfit.items.map((item) => item.name) },
+          question: question.trim() || 'Gợi ý cách tạo dáng và phối phụ kiện phù hợp với trang phục này.',
+        }),
       });
-      const data = await res.json();
-      setAiResponse(data);
-    } catch (err) {
-      console.error(err);
+      const data = await response.json();
+      if (!response.ok || data.success === false) throw new Error('Không thể tải tư vấn lúc này. Vui lòng thử lại.');
+      setAdvice(data);
+    } catch {
+      setAdviceError('Không thể tải tư vấn lúc này. Vui lòng thử lại.');
     } finally {
-      setAiLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full space-y-6">
-      {/* Top Banner & Summary Card */}
-      <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden p-6 sm:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: 3D / Realistic Mannequin Studio */}
-          <div className="lg:col-span-6 h-[580px]">
-            <Mannequin3DViewer
-              outfit={outfit}
-              selectedItem={selectedItemForViewer}
-              onSelectItem={(item) => {
-                setSelectedItemForViewer(item);
-                onInspectItem(item);
-              }}
-              activeAvatar={activeAvatar}
-              onChangeAvatar={setActiveAvatar}
-            />
+    <div className="w-full space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-sm font-bold text-stone-800 transition hover:text-black"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Quay lại gợi ý
+        </button>
+        <h1 className="text-sm font-bold tracking-tight text-stone-900 sm:text-base">Chi tiết trang phục</h1>
+      </div>
+
+      <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white p-4 sm:p-7">
+        <div className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8">
+          <div className="min-w-0 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
+            <div className="flex h-[440px] items-center justify-center p-4 sm:h-[520px]">
+              <img
+                src={mainGarment?.imageUrl || outfit.modelImage}
+                alt={mainGarment?.name || outfit.title}
+                className="h-full w-full rounded-xl object-contain"
+              />
+            </div>
           </div>
 
-          {/* Right Column: Outfit Breakdown matching Mockup 4 */}
-          <div className="lg:col-span-6 space-y-5">
+          <div className="min-w-0 space-y-5">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-800">
-                  VietFashion Recommended
-                </span>
-                <span className="text-xs text-stone-500 font-medium">
-                  Bối cảnh: {outfit.context} · {outfit.style}
-                </span>
-              </div>
-              <h2 className="text-2xl font-bold text-stone-900 font-['Playfair_Display',serif]">
-                {outfit.title}
+              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.18em] text-stone-500">VietFashion / {outfit.categoryName}</p>
+              <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-stone-900 sm:text-3xl">
+                {mainGarment?.name || outfit.title}
               </h2>
-              <p className="text-xs text-stone-500 mt-1 font-medium">
-                {outfit.subtitle}
-              </p>
-
-              {/* Match Result Banner from user request */}
-              {matchResult && (
-                <div className="mt-2.5 p-2.5 bg-emerald-50/80 border border-emerald-200/90 rounded-xl text-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-emerald-950 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      Gợi ý tương ứng theo yêu cầu của bạn:
-                    </span>
-                    <span className="font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-full border border-emerald-300">
-                      {matchResult.matchPercentage}% Khớp
-                    </span>
-                  </div>
-                  {userQuery && (
-                    <p className="text-[11px] text-stone-600">
-                      Yêu cầu bạn đã nhập: <em>"{userQuery.context}" · "{userQuery.style}" · "{userQuery.color}"</em>
-                    </p>
-                  )}
-                  {matchResult.matchReasons && matchResult.matchReasons.length > 0 && (
-                    <ul className="text-[11px] text-emerald-900 space-y-0.5 pt-0.5">
-                      {matchResult.matchReasons.slice(0, 2).map((r, i) => (
-                        <li key={i}>✓ {r}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                {outfit.description}
-              </p>
+              <p className="mt-3 text-sm leading-relaxed text-stone-600">{outfit.description}</p>
             </div>
 
-            {/* List of Component Items (matching user screenshot 4) */}
-            <div className="space-y-2.5">
-              <p className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-                Các món trong bộ phối đồ:
-              </p>
-
-              {/* Main Garment */}
-              {mainGarment && (
-                <div
-                  onClick={() => onInspectItem(mainGarment)}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-stone-50 hover:bg-amber-50/80 border border-stone-200 cursor-pointer transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={mainGarment.imageUrl}
-                      alt={mainGarment.name}
-                      className="w-12 h-12 rounded-xl object-cover border border-stone-200"
-                    />
-                    <div>
-                      <h4 className="text-xs font-bold text-stone-900 group-hover:text-red-700 transition">
-                        {mainGarment.name}
-                      </h4>
-                      <p className="text-[11px] text-red-700 font-medium">Trang phục chính · {mainGarment.region}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-xs text-stone-500 group-hover:text-stone-900 font-medium flex items-center gap-1"
-                  >
-                    <span>Chi tiết</span>
-                    <Info className="w-3.5 h-3.5" />
-                  </button>
+            <dl className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-stone-50 px-4 text-xs sm:px-5 sm:text-sm">
+              {[
+                ['Loại trang phục', mainGarment?.type || outfit.categoryName],
+                ['Khu vực', mainGarment?.region],
+                ['Thời kỳ', mainGarment?.era],
+                ['Chất liệu', mainGarment?.material],
+                ['Bối cảnh phù hợp', mainGarment?.suitableContexts.join(', ') || outfit.context],
+                ['Phong cách', outfit.style],
+                ['Đặc điểm', mainGarment?.keyFeatures],
+              ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
+                <div key={label} className="grid gap-1 py-3 sm:grid-cols-[130px_minmax(0,1fr)] sm:gap-4">
+                  <dt className="font-medium text-stone-500">{label}</dt>
+                  <dd className="leading-relaxed text-stone-800">{value}</dd>
                 </div>
-              )}
+              ))}
+            </dl>
 
-              {/* Headwear */}
-              {headwearItem && (
-                <div
-                  onClick={() => onInspectItem(headwearItem)}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-stone-50 hover:bg-amber-50/80 border border-stone-200 cursor-pointer transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={headwearItem.imageUrl}
-                      alt={headwearItem.name}
-                      className="w-10 h-10 rounded-xl object-cover border border-stone-200"
-                    />
-                    <div>
-                      <h4 className="text-xs font-semibold text-stone-900 group-hover:text-red-700 transition">
-                        {headwearItem.name}
-                      </h4>
-                      <p className="text-[11px] text-stone-500">Mấn / Nón</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-xs text-stone-500 group-hover:text-stone-900 font-medium flex items-center gap-1"
-                  >
-                    <span>Chi tiết</span>
-                    <Info className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Color Harmony Box */}
-            <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-amber-700" />
-                  <span className="text-xs font-bold text-amber-950">Chỉ số hài hòa màu sắc</span>
-                </div>
-                <span className="text-xs font-bold text-amber-900">
-                  {outfit.colorHarmony.score}/100 · {outfit.colorHarmony.element}
-                </span>
+            {mainGarment && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-bold text-stone-900">Ý nghĩa văn hóa</h3>
+                <p className="text-sm leading-relaxed text-stone-600">{mainGarment.culturalMeaning}</p>
               </div>
-              <div className="flex items-center gap-1.5">
-                {outfit.colorHarmony.palette.map((c, i) => (
+            )}
+
+            <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-stone-900">
+                <span className="inline-flex items-center gap-2"><Palette className="h-4 w-4" />Bảng màu trang phục</span>
+                <span className="font-medium text-stone-600">{outfit.primaryColor}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {outfit.colorHarmony.palette.map((color, index) => (
                   <span
-                    key={i}
-                    className="w-6 h-6 rounded-full border border-stone-300 shadow-xs"
-                    style={{ backgroundColor: c }}
+                    key={`${color}-${index}`}
+                    title={color}
+                    aria-label={`Màu ${color}`}
+                    className="h-7 w-7 rounded-full border border-black/15"
+                    style={{ backgroundColor: color }}
                   />
                 ))}
               </div>
-              <p className="text-[11px] text-stone-600 leading-relaxed">
-                {outfit.colorHarmony.explanation}
-              </p>
+              <p className="text-xs leading-relaxed text-stone-600">{outfit.colorHarmony.explanation}</p>
             </div>
 
-            {/* Two Primary Action Buttons matching Mockup 4 */}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (mainGarment) onInspectItem(mainGarment);
-                }}
-                className="flex-1 py-3 px-4 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-bold shadow-xs transition text-center"
-              >
-                Xem chi tiết từng món
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onSaveOutfit(outfit)}
-                className={`flex-1 py-3 px-4 rounded-xl text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-2 ${
-                  isSaved
-                    ? 'bg-emerald-700 hover:bg-emerald-800'
-                    : 'bg-red-700 hover:bg-red-800'
-                }`}
-              >
-                <Bookmark className="w-4 h-4" />
-                <span>{isSaved ? 'Đã lưu trong Lookbook' : 'Lưu bộ đồ'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleShare}
-                className="p-3 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 transition"
-                title="Chia sẻ bộ đồ"
-              >
-                {copiedLink ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {copiedLink && (
-              <p className="text-[11px] text-emerald-700 font-medium text-center">
-                Đã sao chép link outfit vào bộ nhớ tạm!
-              </p>
-            )}
+            <button
+              type="button"
+              onClick={() => onSaveOutfit(outfit)}
+              className={`flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-extrabold transition ${
+                isSaved ? 'bg-stone-900 text-white hover:bg-stone-800' : 'bg-[#ffc21c] text-stone-950 hover:bg-[#ffd451]'
+              }`}
+            >
+              {isSaved ? <Check className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+              {isSaved ? 'Đã lưu trong Lookbook' : 'Lưu trang phục vào Lookbook'}
+            </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Interactive Gen Z AI Stylist Box */}
-      <div className="bg-gradient-to-r from-stone-900 via-stone-800 to-amber-950 text-white rounded-3xl p-6 shadow-md">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300">
-              <Sparkles className="w-4 h-4" />
+      {mainGarment && (
+        <section className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-stone-900">Cách mặc & phối trang phục</h3>
+              <p className="text-sm leading-relaxed text-stone-600">{mainGarment.genZStylingNote}</p>
+              <ul className="space-y-2 text-xs leading-relaxed text-stone-600">
+                {mainGarment.culturalDoAndDont.dos.map((note) => <li key={note}><span className="font-bold text-stone-800">Nên: </span>{note}</li>)}
+                {mainGarment.culturalDoAndDont.donts.map((note) => <li key={note}><span className="font-bold text-stone-800">Lưu ý: </span>{note}</li>)}
+              </ul>
             </div>
-            <div>
-              <h3 className="text-sm font-bold font-['Playfair_Display',serif] text-white">
-                Boss of delay AI Stylist (Cố vấn thời trang Gen Z)
-              </h3>
-              <p className="text-[11px] text-stone-300">
-                Tư vấn tạo dáng, makeup, mẹo phụ kiện & kiểm định lề lối văn hóa
-              </p>
+            <div className="space-y-3 rounded-2xl bg-stone-50 p-4">
+              <h3 className="text-sm font-bold text-stone-900">Nguồn tham khảo</h3>
+              <p className="text-xs font-semibold text-stone-700">{mainGarment.verifiedSource.museum}</p>
+              <p className="text-xs leading-relaxed text-stone-500">{mainGarment.verifiedSource.citation}</p>
+              <a
+                href={mainGarment.verifiedSource.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-800 underline underline-offset-4"
+              >
+                Xem nguồn tham khảo <ExternalLink className="h-3.5 w-3.5" />
+              </a>
             </div>
           </div>
+        </section>
+      )}
 
-          <button
-            type="button"
-            onClick={() => setShowAiAdvisor(!showAiAdvisor)}
-            className="text-xs text-amber-300 hover:text-amber-200 font-medium underline"
-          >
-            {showAiAdvisor ? 'Thu gọn' : 'Mở tư vấn'}
-          </button>
-        </div>
-
-        {/* Input Question */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={aiQuestion}
-            onChange={(e) => setAiQuestion(e.target.value)}
-            placeholder="Hỏi AI: Ví dụ: Gợi ý cách tạo dáng chụp ảnh Tết tại phố cổ, hoặc phối giày dép..."
-            className="flex-1 bg-stone-800/90 border border-stone-700 rounded-xl px-4 py-2.5 text-xs text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAskAiStylist();
-            }}
-          />
-          <button
-            type="button"
-            onClick={handleAskAiStylist}
-            disabled={aiLoading}
-            className="bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50"
-          >
-            {aiLoading ? <RotateCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            <span>Hỏi AI</span>
-          </button>
-        </div>
-
-        {/* AI Recommendations Results */}
-        {aiResponse && (
-          <div className="mt-4 pt-4 border-t border-stone-700/80 space-y-3 text-xs">
-            {aiResponse.genZConcept && (
-              <div>
-                <span className="font-semibold text-amber-300">Ý tưởng phong cách Gen Z: </span>
-                <span className="text-stone-200">{aiResponse.genZConcept}</span>
-              </div>
-            )}
-
-            {aiResponse.stylingTips && Array.isArray(aiResponse.stylingTips) && (
-              <div className="bg-stone-800/70 p-3 rounded-xl border border-stone-700 space-y-1">
-                <span className="font-semibold text-amber-200 block mb-1">Mẹo phối & Tạo dáng:</span>
-                <ul className="list-disc list-inside space-y-1 text-stone-300">
-                  {aiResponse.stylingTips.map((tip: string, idx: number) => (
-                    <li key={idx}>{tip}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {aiResponse.culturalCheck && (
-              <div className="bg-emerald-950/40 border border-emerald-500/40 p-3 rounded-xl text-emerald-200 flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold">Đánh giá chuẩn mực di sản: </span>
-                  <span>{aiResponse.culturalCheck.culturalRespectTips || 'Trang phục chuẩn mực'}</span>
-                  {aiResponse.culturalCheck.cautions && (
-                    <p className="text-[11px] text-amber-300 mt-1">
-                      ⚠️ Cảnh báo: {aiResponse.culturalCheck.cautions}
-                    </p>
-                  )}
-                </div>
+      <section className="rounded-3xl bg-stone-900 p-5 text-white sm:p-6">
+        <button
+          type="button"
+          onClick={() => setShowAdvisor((current) => !current)}
+          aria-expanded={showAdvisor}
+          aria-controls="outfit-stylist"
+          className="flex w-full items-center justify-between gap-4 text-left"
+        >
+          <span className="inline-flex items-center gap-3 text-sm font-bold"><Sparkles className="h-4 w-4 text-[#ffc21c]" />Tư vấn cách phối trang phục</span>
+          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${showAdvisor ? 'rotate-180' : ''}`} />
+        </button>
+        {showAdvisor && (
+          <div id="outfit-stylist" className="mt-5 space-y-4">
+            <form onSubmit={askStylist} className="flex flex-col gap-2 sm:flex-row">
+              <label htmlFor="stylist-question" className="sr-only">Câu hỏi về trang phục</label>
+              <input
+                id="stylist-question"
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                placeholder="Ví dụ: Phối giày và phụ kiện như thế nào?"
+                className="min-w-0 flex-1 rounded-xl border border-stone-600 bg-stone-800 px-4 py-3 text-xs text-white outline-none placeholder:text-stone-400 focus:border-[#ffc21c]"
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ffc21c] px-5 py-3 text-xs font-bold text-stone-950 disabled:opacity-60"
+              >
+                {isLoading && <RotateCw className="h-3.5 w-3.5 animate-spin" />}
+                {isLoading ? 'Đang tư vấn…' : 'Gửi câu hỏi'}
+              </button>
+            </form>
+            {adviceError && <p role="alert" className="text-xs text-amber-200">{adviceError}</p>}
+            {advice && (
+              <div aria-live="polite" className="space-y-3 border-t border-stone-700 pt-4 text-xs leading-relaxed text-stone-200">
+                {advice.advice && <p className="whitespace-pre-line">{advice.advice}</p>}
+                {advice.genZConcept && <p>{advice.genZConcept}</p>}
+                {Array.isArray(advice.stylingTips) && <ul className="list-disc space-y-1 pl-4">{advice.stylingTips.map((tip, index) => <li key={index}>{tip}</li>)}</ul>}
+                {advice.culturalCheck?.culturalRespectTips && <p>{advice.culturalCheck.culturalRespectTips}</p>}
+                {advice.culturalCheck?.cautions && <p className="text-amber-200">{advice.culturalCheck.cautions}</p>}
               </div>
             )}
           </div>
         )}
+      </section>
 
-        {/* Quick question suggestions */}
-        {!aiResponse && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {[
-              'Cách tạo dáng chụp ảnh với áo dài',
-              'Gợi ý kiểu tóc và makeup phù hợp',
-              'Thời tiết se lạnh nên khoác thêm gì?',
-              'Có nên đi sneaker với áo ngũ thân?'
-            ].map((q, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  setAiQuestion(q);
-                }}
-                className="text-[11px] bg-stone-800/60 hover:bg-stone-700 px-2.5 py-1 rounded-lg text-stone-300 transition"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Dataset & Cultural Verification Footer Box matching mockup bottom right */}
-      <div className="bg-stone-100 rounded-3xl p-6 border border-stone-200">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white border border-stone-200 flex items-center justify-center text-red-700 shrink-0">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-stone-900">
-                Đảm bảo thông tin văn hóa chính xác
-              </h4>
-              <p className="text-xs text-stone-600 mt-0.5">
-                Tất cả hình ảnh và thông tin đều lấy từ VietFashion Dataset, không tự tạo nội dung ngoài dữ liệu có.
-              </p>
-              <div className="flex items-center gap-3 text-[11px] text-stone-500 mt-1.5 flex-wrap">
-                <span className="flex items-center gap-1 text-emerald-700 font-medium">✓ Dữ liệu có nguồn gốc rõ ràng</span>
-                <span className="flex items-center gap-1 text-emerald-700 font-medium">✓ Thông tin được kiểm duyệt</span>
-                <span className="flex items-center gap-1 text-emerald-700 font-medium">✓ Tôn trọng giá trị văn hóa Việt</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onOpenDataset}
-            className="px-4 py-2 bg-white hover:bg-stone-50 text-stone-900 border border-stone-300 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition shrink-0"
-          >
-            <span>Khám phá VietFashion Dataset</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      <div className="flex justify-center">
+        <button type="button" onClick={onOpenDataset} className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-stone-700 hover:text-black">
+          Khám phá VietFashion Dataset <ExternalLink className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );

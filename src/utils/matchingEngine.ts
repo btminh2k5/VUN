@@ -40,7 +40,7 @@ const COLOR_MAP: Record<string, { name: string; hex: string }> = {
   'trang': { name: 'Trắng', hex: '#F8FAFC' },
   'white': { name: 'Trắng', hex: '#F8FAFC' },
   'kem': { name: 'Trắng', hex: '#FDFBF7' },
-  'be': { name: 'Trắng', hex: '#D6D3D1' },
+  'be': { name: 'Be', hex: '#D6D3D1' },
   'hong': { name: 'Hồng', hex: '#DB2777' },
   'pink': { name: 'Hồng', hex: '#F472B6' },
   'sen': { name: 'Hồng', hex: '#EC4899' },
@@ -77,6 +77,10 @@ export function findMatchingOutfits(
   const normSty = removeDiacritics(userStyle || '').trim();
   const normCol = removeDiacritics(userColor || '').trim();
 
+  // Color is a hard requirement: suggestions must never fall back to another
+  // color merely because its context or style score is high.
+  const requestedColor = resolveRequestedColor(normCol);
+
   // Combine all user queries for garment detection
   const combinedUserQuery = `${normSty} ${normCtx}`.toLowerCase();
 
@@ -89,15 +93,22 @@ export function findMatchingOutfits(
     }
   }
 
-  const results: MatchResult[] = OUTFIT_SETS.map((outfit) => {
+  const colorMatchedOutfits = normCol
+    ? OUTFIT_SETS.filter((outfit) => {
+        const outfitColor = removeDiacritics(outfit.primaryColor).trim();
+        return requestedColor
+          ? outfitColor === requestedColor
+          : outfitColor === normCol;
+      })
+    : OUTFIT_SETS;
+
+  const results: MatchResult[] = colorMatchedOutfits.map((outfit) => {
     let score = 20; // baseline
     const reasons: string[] = [];
 
     const outfitCategoryNorm = removeDiacritics(outfit.categoryName);
     const outfitTitleNorm = removeDiacritics(outfit.title);
     const outfitCtxNorm = removeDiacritics(outfit.context);
-    const outfitStyNorm = removeDiacritics(outfit.style);
-    const outfitColNorm = removeDiacritics(outfit.primaryColor);
 
     // 1. Direct Garment Matching (HIGHEST PRIORITY: +80 points)
     let garmentMatched = false;
@@ -119,22 +130,9 @@ export function findMatchingOutfits(
     }
 
     // 2. Color Matching (+40 points)
-    let colMatched = false;
     if (normCol) {
-      if (outfitColNorm.includes(normCol) || normCol.includes(outfitColNorm)) {
-        score += 40;
-        colMatched = true;
-        reasons.push(`Đúng màu sắc "${outfit.primaryColor}" bạn tìm kiếm`);
-      } else {
-        for (const [key, val] of Object.entries(COLOR_MAP)) {
-          if (normCol.includes(key) && outfitColNorm.includes(removeDiacritics(val.name))) {
-            score += 35;
-            colMatched = true;
-            reasons.push(`Tông màu "${val.name}" tương thích yêu cầu`);
-            break;
-          }
-        }
-      }
+      score += 40;
+      reasons.push(`Đúng màu sắc "${outfit.primaryColor}" bạn tìm kiếm`);
     }
 
     // 3. Context Matching (+25 points)
@@ -175,4 +173,22 @@ export function findMatchingOutfits(
   // Sort descending by score
   results.sort((a, b) => b.score - a.score);
   return results;
+}
+
+function resolveRequestedColor(normalizedInput: string): string | undefined {
+  if (!normalizedInput) return undefined;
+
+  const exactOption = COLOR_OPTIONS.find(
+    (color) => removeDiacritics(color.value) === normalizedInput
+  );
+  if (exactOption) return removeDiacritics(exactOption.value);
+
+  // Prefer specific phrases such as "xanh lam" over the generic "xanh".
+  const matchingKeyword = Object.keys(COLOR_MAP)
+    .sort((a, b) => b.length - a.length)
+    .find((keyword) => normalizedInput.includes(keyword));
+
+  return matchingKeyword
+    ? removeDiacritics(COLOR_MAP[matchingKeyword].name)
+    : undefined;
 }

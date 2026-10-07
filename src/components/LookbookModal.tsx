@@ -95,7 +95,7 @@ export const LookbookModal: React.FC<LookbookModalProps> = ({
               </div>
               <p className="text-sm font-semibold text-stone-700">Chưa có outfit nào trong Lookbook</p>
               <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
-                Khi phối đồ ở Bước 2 hoặc Bước 4, hãy nhấn nút "Lưu bộ đồ" để lưu lại vào đây và dễ dàng so sánh hoặc chia sẻ bạn bè!
+                Trong phần Chi tiết trang phục, nhấn "Lưu trang phục vào Lookbook" để thêm mẫu và xem lại bất cứ lúc nào.
               </p>
             </div>
           ) : compareMode && compareOutfits.length === 2 ? (

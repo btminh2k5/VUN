@@ -344,7 +344,7 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
                         <Shirt className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-bold text-stone-900">React Client</span>
-                      <span className="text-[10px] text-stone-500">Giao diện bàn phím & 3D</span>
+                      <span className="text-[10px] text-stone-500">Giao diện bàn phím thân thiện</span>
                     </div>
 
                     <ArrowRight className="w-5 h-5 text-stone-400 rotate-90 md:rotate-0" />

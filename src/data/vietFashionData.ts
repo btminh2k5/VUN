@@ -1101,7 +1101,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     categoryName: 'Áo ngũ thân tay chẽn',
     context: 'Dạo phố',
     style: 'Tối giản',
-    primaryColor: 'Trắng',
+    primaryColor: 'Be',
     colorHex: '#D6D3D1',
     modelImage: '/images/dataset/Nu/aonguthan_taychen/ant_be.jpg',
     model3DConfig: {

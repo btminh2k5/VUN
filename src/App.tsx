@@ -7,7 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, Bookmark, Database, Menu, ShieldCheck } from 'lucide-react';
 import {
   OUTFIT_SETS,
-  VIET_FASHION_ITEMS,
+  REAL_DATASET_35_ITEMS,
+  COLOR_OPTIONS,
   OutfitSet,
   GarmentItem
 } from './data/vietFashionData';
@@ -15,7 +16,6 @@ import { findMatchingOutfits, MatchResult } from './utils/matchingEngine';
 import { StepHeader } from './components/StepHeader';
 import { Step1InputForm } from './components/Step1InputForm';
 import { Step2OutfitSuggestions } from './components/Step2OutfitSuggestions';
-import { Step3ItemDetail } from './components/Step3ItemDetail';
 import { Step4CompleteOutfit } from './components/Step4CompleteOutfit';
 import { VietFashionDatasetModal } from './components/VietFashionDatasetModal';
 import { LookbookModal } from './components/LookbookModal';
@@ -28,9 +28,7 @@ export default function App() {
   const [selectedStyle, setSelectedStyle] = useState('Hiện đại');
   const [selectedColor, setSelectedColor] = useState('Đỏ');
   const [currentOutfitIndex, setCurrentOutfitIndex] = useState(0);
-  const [selectedItemForDetail, setSelectedItemForDetail] = useState<GarmentItem>(
-    VIET_FASHION_ITEMS['ao-dai-do-gam']
-  );
+  const [detailOutfit, setDetailOutfit] = useState<OutfitSet | null>(null);
   const [savedOutfits, setSavedOutfits] = useState<OutfitSet[]>(() => {
     try {
       const saved = localStorage.getItem('vietfashion_saved_outfits');
@@ -39,7 +37,6 @@ export default function App() {
       return [OUTFIT_SETS[0]];
     }
   });
-  const [favoriteItemIds, setFavoriteItemIds] = useState<string[]>(['ao-dai-do-gam']);
   const [isDatasetModalOpen, setIsDatasetModalOpen] = useState(false);
   const [isLookbookModalOpen, setIsLookbookModalOpen] = useState(false);
   const [isGuidelinesModalOpen, setIsGuidelinesModalOpen] = useState(false);
@@ -60,7 +57,7 @@ export default function App() {
     () => matchResults.map((result) => result.outfit),
     [matchResults]
   );
-  const activeOutfit = matchedOutfits[currentOutfitIndex] || matchedOutfits[0] || OUTFIT_SETS[0];
+  const activeOutfit = detailOutfit || matchedOutfits[currentOutfitIndex] || matchedOutfits[0] || OUTFIT_SETS[0];
   const isCurrentOutfitSaved = savedOutfits.some((outfit) => outfit.id === activeOutfit.id);
 
   const goToStep = (step: number) => {
@@ -70,12 +67,60 @@ export default function App() {
 
   const handleStep1Submit = () => {
     setCurrentOutfitIndex(0);
+    setDetailOutfit(null);
     goToStep(2);
   };
 
-  const handleSelectGarmentItem = (item: GarmentItem) => {
-    setSelectedItemForDetail(item);
+  const handleSelectOutfit = (outfit: OutfitSet) => {
+    const index = matchedOutfits.findIndex((candidate) => candidate.id === outfit.id);
+    if (index !== -1) setCurrentOutfitIndex(index);
+    setDetailOutfit(outfit);
     goToStep(3);
+  };
+
+  const handleSelectGarmentItem = (item: GarmentItem) => {
+    const existingOutfit = OUTFIT_SETS.find((outfit) =>
+      outfit.modelImage === item.imageUrl || outfit.items.some((garment) => garment.id === item.id)
+    );
+    if (existingOutfit) {
+      handleSelectOutfit(existingOutfit);
+      setIsDatasetModalOpen(false);
+      return;
+    }
+
+    const record = REAL_DATASET_35_ITEMS.find((variant) => variant.imageUrl === item.imageUrl);
+    const template = OUTFIT_SETS.find((outfit) => outfit.categoryName === record?.category);
+    if (!record || !template) return;
+
+    const additionalColors: Record<string, string> = {
+      Cam: '#EA580C', Tím: '#7E22CE', Nâu: '#78350F', Be: '#D6D3D1', 'Xanh lục': '#047857'
+    };
+    const colorHex = COLOR_OPTIONS.find((color) => color.value === record.color)?.hex
+      || additionalColors[record.color] || template.colorHex;
+    const garment: GarmentItem = {
+      ...template.items[0],
+      id: `dataset-${record.id}`,
+      name: record.name,
+      imageUrl: record.imageUrl,
+      galleryImages: [record.imageUrl],
+      region: record.region,
+      culturalMeaning: record.culturalMeaning,
+      colorHex
+    };
+    handleSelectOutfit({
+      ...template,
+      id: `set-dataset-${record.id}`,
+      title: record.name,
+      subtitle: record.category,
+      description: record.culturalMeaning,
+      primaryColor: record.color,
+      colorHex,
+      modelImage: record.imageUrl,
+      model3DConfig: { ...template.model3DConfig, baseColor: colorHex, trimColor: colorHex },
+      items: [garment],
+      colorHarmony: { ...template.colorHarmony, palette: [colorHex], explanation: record.culturalMeaning }
+    });
+    setIsDatasetModalOpen(false);
   };
 
   const handleSaveToggleOutfit = (outfit: OutfitSet) => {
@@ -160,45 +205,20 @@ export default function App() {
         {currentStep === 2 && (
           <Step2OutfitSuggestions
             outfits={matchedOutfits}
-            matchResults={matchResults}
             currentIndex={currentOutfitIndex}
-            onSelectIndex={setCurrentOutfitIndex}
-            selectedContext={selectedContext}
-            selectedStyle={selectedStyle}
-            selectedColor={selectedColor}
-            onViewOutfitDetails={() => goToStep(4)}
-            onSelectItem={handleSelectGarmentItem}
+            onSelectOutfit={(index) => handleSelectOutfit(matchedOutfits[index])}
             onEditFilters={() => goToStep(1)}
-            isSaved={isCurrentOutfitSaved}
-            onToggleSave={() => handleSaveToggleOutfit(activeOutfit)}
           />
         )}
 
         {currentStep === 3 && (
-          <Step3ItemDetail
-            item={selectedItemForDetail}
-            onBack={() => goToStep(2)}
-            onProceedToOutfit={() => goToStep(4)}
-            isFavorited={favoriteItemIds.includes(selectedItemForDetail.id)}
-            onToggleFavorite={() =>
-              setFavoriteItemIds((current) =>
-                current.includes(selectedItemForDetail.id)
-                  ? current.filter((id) => id !== selectedItemForDetail.id)
-                  : [...current, selectedItemForDetail.id]
-              )
-            }
-          />
-        )}
-
-        {currentStep === 4 && (
           <Step4CompleteOutfit
+            key={activeOutfit.id}
             outfit={activeOutfit}
-            matchResult={matchResults[currentOutfitIndex] || matchResults[0]}
-            userQuery={{ context: selectedContext, style: selectedStyle, color: selectedColor }}
-            onInspectItem={handleSelectGarmentItem}
             onSaveOutfit={handleSaveToggleOutfit}
             isSaved={isCurrentOutfitSaved}
             onOpenDataset={() => setIsDatasetModalOpen(true)}
+            onBack={() => goToStep(2)}
           />
         )}
       </main>
@@ -214,9 +234,8 @@ export default function App() {
         savedOutfits={savedOutfits}
         onRemoveOutfit={(id) => setSavedOutfits((current) => current.filter((outfit) => outfit.id !== id))}
         onSelectOutfit={(outfit) => {
-          const index = matchedOutfits.findIndex((candidate) => candidate.id === outfit.id);
-          if (index !== -1) setCurrentOutfitIndex(index);
-          goToStep(4);
+          handleSelectOutfit(outfit);
+          setIsLookbookModalOpen(false);
         }}
       />
       <CulturalGuidelinesModal
