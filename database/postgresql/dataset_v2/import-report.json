@@ -1,5 +1,8 @@
 {
-  "totalImages": 35,
+  "totalImages": 60,
+  "clothingImages": 35,
+  "accessoryImages": 19,
+  "footwearImages": 6,
   "types": {
     "Áo bà ba": 8,
     "Áo dài": 7,
@@ -7,7 +10,9 @@
     "Áo ngũ thân tay chẽn": 7,
     "Áo yếm": 8
   },
-  "ignoredFiles": [],
+  "ignoredFiles": [
+    "README.md"
+  ],
   "notes": [
     "Labels inferred from names only; all rows default to draft.",
     "Review mappings, especially xanh, before approving records.",
