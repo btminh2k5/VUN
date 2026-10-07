@@ -33,18 +33,6 @@ services:
         read_only: true
         bind:
           create_host_path: false
-      - type: bind
-        source: ./database/postgresql/dataset_v2/05_styling_items_schema.sql
-        target: /docker-entrypoint-initdb.d/04_styling_items_schema.sql
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ./database/postgresql/dataset_v2/06_import_styling_items.sql
-        target: /docker-entrypoint-initdb.d/05_import_styling_items.sql
-        read_only: true
-        bind:
-          create_host_path: false
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
