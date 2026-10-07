@@ -59,6 +59,18 @@ export interface OutfitSet {
     summary: string;
   };
   genZTips: string[];
+  recommendation?: {
+    score: number;
+    scoreBreakdown: {
+      color: number;
+      style: number;
+      occasion: number;
+      cultural: number;
+    };
+    explanation: string;
+    warnings: string[];
+    explanationSource: 'gemini' | 'rule_engine';
+  };
 }
 
 export interface DatasetVariantRecord {

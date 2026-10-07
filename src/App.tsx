@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, Bookmark, Database, Menu, ShieldCheck } from 'lucide-react';
+import { Bookmark, Menu, ShieldCheck } from 'lucide-react';
 import {
   OUTFIT_SETS,
   REAL_DATASET_35_ITEMS,
@@ -21,6 +21,7 @@ import { VietFashionDatasetModal } from './components/VietFashionDatasetModal';
 import { LookbookModal } from './components/LookbookModal';
 import { CulturalGuidelinesModal } from './components/CulturalGuidelinesModal';
 import { CulturalAnimatedBackground } from './components/CulturalAnimatedBackground';
+import { fetchRecommendations } from './services/recommendationApi';
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -28,6 +29,9 @@ export default function App() {
   const [selectedStyle, setSelectedStyle] = useState('Hiện đại');
   const [selectedColor, setSelectedColor] = useState('Đỏ');
   const [currentOutfitIndex, setCurrentOutfitIndex] = useState(0);
+  const [apiOutfits, setApiOutfits] = useState<OutfitSet[] | null>(null);
+  const [isRecommending, setIsRecommending] = useState(false);
+  const [recommendationError, setRecommendationError] = useState('');
   const [detailOutfit, setDetailOutfit] = useState<OutfitSet | null>(null);
   const [savedOutfits, setSavedOutfits] = useState<OutfitSet[]>(() => {
     try {
@@ -53,10 +57,17 @@ export default function App() {
     () => findMatchingOutfits(selectedContext, selectedStyle, selectedColor),
     [selectedContext, selectedStyle, selectedColor]
   );
-  const matchedOutfits = React.useMemo(
-    () => matchResults.map((result) => result.outfit),
-    [matchResults]
-  );
+  const matchedOutfits = React.useMemo(() => {
+    const localOutfits = matchResults.map((result) => result.outfit);
+    const candidates = apiOutfits ? [...apiOutfits, ...localOutfits] : localOutfits;
+    const seenCategories = new Set<string>();
+
+    return candidates.filter((outfit) => {
+      if (seenCategories.has(outfit.categoryName)) return false;
+      seenCategories.add(outfit.categoryName);
+      return true;
+    }).slice(0, 5);
+  }, [apiOutfits, matchResults]);
   const activeOutfit = detailOutfit || matchedOutfits[currentOutfitIndex] || matchedOutfits[0] || OUTFIT_SETS[0];
   const isCurrentOutfitSaved = savedOutfits.some((outfit) => outfit.id === activeOutfit.id);
 
@@ -65,10 +76,21 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleStep1Submit = () => {
+  const handleStep1Submit = async () => {
     setCurrentOutfitIndex(0);
     setDetailOutfit(null);
+    setApiOutfits(null);
+    setRecommendationError('');
+    setIsRecommending(true);
     goToStep(2);
+    try {
+      const recommendations = await fetchRecommendations(selectedContext, selectedStyle, selectedColor);
+      setApiOutfits(recommendations);
+    } catch (error) {
+      setRecommendationError(error instanceof Error ? error.message : 'Không thể tải gợi ý từ hệ thống.');
+    } finally {
+      setIsRecommending(false);
+    }
   };
 
   const handleSelectOutfit = (outfit: OutfitSet) => {
@@ -149,19 +171,10 @@ export default function App() {
 
           <nav className="hidden items-center gap-8 text-xs font-semibold text-black/65 lg:flex">
             <button onClick={() => goToStep(1)} className="transition hover:text-black">Phối đồ</button>
-            <button onClick={() => setIsDatasetModalOpen(true)} className="transition hover:text-black">Bộ sưu tập</button>
             <button onClick={() => setIsGuidelinesModalOpen(true)} className="transition hover:text-black">Câu chuyện di sản</button>
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsDatasetModalOpen(true)}
-              className="nav-icon-button dataset-nav-button"
-              title="Mở VietFashion Dataset"
-            >
-              <Database className="h-4 w-4" />
-            </button>
             <button
               type="button"
               onClick={() => setIsLookbookModalOpen(true)}
@@ -208,6 +221,8 @@ export default function App() {
             currentIndex={currentOutfitIndex}
             onSelectOutfit={(index) => handleSelectOutfit(matchedOutfits[index])}
             onEditFilters={() => goToStep(1)}
+            isLoading={isRecommending}
+            error={recommendationError}
           />
         )}
 
@@ -215,6 +230,7 @@ export default function App() {
           <Step4CompleteOutfit
             key={activeOutfit.id}
             outfit={activeOutfit}
+            userQuery={{ context: selectedContext, style: selectedStyle, color: selectedColor }}
             onSaveOutfit={handleSaveToggleOutfit}
             isSaved={isCurrentOutfitSaved}
             onOpenDataset={() => setIsDatasetModalOpen(true)}
@@ -257,9 +273,6 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
             <button onClick={() => setIsGuidelinesModalOpen(true)} className="footer-link">
               <ShieldCheck className="h-3.5 w-3.5" /> Chuẩn mực di sản
-            </button>
-            <button onClick={() => setIsDatasetModalOpen(true)} className="footer-link">
-              Dữ liệu gốc <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
             <span className="px-2 text-black/35">© 2026</span>
           </div>

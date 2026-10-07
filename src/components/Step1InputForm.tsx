@@ -8,7 +8,6 @@ import {
   Shirt,
   Sparkles
 } from 'lucide-react';
-import { findMatchingOutfits } from '../utils/matchingEngine';
 
 interface Step1InputFormProps {
   selectedContext: string;
@@ -42,11 +41,6 @@ export const Step1InputForm: React.FC<Step1InputFormProps> = ({
   onSelectColor,
   onSubmit
 }) => {
-  const topMatch = React.useMemo(
-    () => findMatchingOutfits(selectedContext, selectedStyle, selectedColor)[0],
-    [selectedContext, selectedStyle, selectedColor]
-  );
-
   const submitOnEnter = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') onSubmit();
   };
@@ -180,13 +174,9 @@ export const Step1InputForm: React.FC<Step1InputFormProps> = ({
             <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-full bg-[#ffc21c] text-black">
               <Sparkles className="h-5 w-5" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Khớp trực tiếp</p>
-            <div className="mt-2 flex items-end gap-2">
-              <span className="text-6xl font-black tracking-[-0.08em] text-[#ffc21c]">{topMatch?.matchPercentage || 95}</span>
-              <span className="pb-2 text-sm font-bold text-white/55">%</span>
-            </div>
+            <p className="text-3xl font-black tracking-[-0.04em] text-[#ffc21c]">Xem gợi ý</p>
             <p className="mt-4 text-xs leading-5 text-white/55">
-              {topMatch?.matchReasons?.[0] || 'Đã sẵn sàng tìm bộ trang phục phù hợp nhất.'}
+              Chọn đủ tiêu chí để xem những mẫu áo phù hợp với nhu cầu của bạn.
             </p>
           </div>
 

@@ -45,6 +45,27 @@ app.get('/api/database/catalog', async (_req, res) => {
   }
 });
 
+// Browser-facing proxy to the FastAPI recommendation pipeline.
+app.post('/api/recommendations', async (req, res) => {
+  const fastApiUrl = process.env.FASTAPI_URL || 'http://127.0.0.1:8000';
+  try {
+    const response = await fetch(`${fastApiUrl}/recommendations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const payload = await response.json();
+    return res.status(response.status).json(payload);
+  } catch (error: any) {
+    return res.status(502).json({
+      success: false,
+      error: 'FastAPI recommendation service is unavailable.',
+      detail: error.message,
+    });
+  }
+});
+
 // API route for AI Styling Advice with Gemini
 app.post('/api/ai-styling', async (req, res) => {
   try {
