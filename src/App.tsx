@@ -3,23 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Sparkles, 
-  Bookmark, 
-  ShieldCheck, 
-  Database, 
-  BookOpen, 
-  RotateCcw, 
-  HelpCircle,
-  ExternalLink,
-  Heart
-} from 'lucide-react';
-import { 
-  OUTFIT_SETS, 
-  VIET_FASHION_ITEMS, 
-  OutfitSet, 
-  GarmentItem 
+import React, { useEffect, useState } from 'react';
+import { ArrowUpRight, Bookmark, Database, Menu, ShieldCheck } from 'lucide-react';
+import {
+  OUTFIT_SETS,
+  VIET_FASHION_ITEMS,
+  OutfitSet,
+  GarmentItem
 } from './data/vietFashionData';
 import { findMatchingOutfits, MatchResult } from './utils/matchingEngine';
 import { StepHeader } from './components/StepHeader';
@@ -33,22 +23,14 @@ import { CulturalGuidelinesModal } from './components/CulturalGuidelinesModal';
 import { CulturalAnimatedBackground } from './components/CulturalAnimatedBackground';
 
 export default function App() {
-  const [currentStep, setCurrentStep] = useState<number>(1);
-
-  // 3 Primary Inputs for Step 1
-  const [selectedContext, setSelectedContext] = useState<string>('Tết');
-  const [selectedStyle, setSelectedStyle] = useState<string>('Hiện đại');
-  const [selectedColor, setSelectedColor] = useState<string>('Đỏ');
-
-  // Active outfit selection
-  const [currentOutfitIndex, setCurrentOutfitIndex] = useState<number>(0);
-
-  // Item selected for detailed inspection in Step 3
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedContext, setSelectedContext] = useState('Tết');
+  const [selectedStyle, setSelectedStyle] = useState('Hiện đại');
+  const [selectedColor, setSelectedColor] = useState('Đỏ');
+  const [currentOutfitIndex, setCurrentOutfitIndex] = useState(0);
   const [selectedItemForDetail, setSelectedItemForDetail] = useState<GarmentItem>(
     VIET_FASHION_ITEMS['ao-dai-do-gam']
   );
-
-  // Saved Outfits (Lookbook) with LocalStorage sync
   const [savedOutfits, setSavedOutfits] = useState<OutfitSet[]>(() => {
     try {
       const saved = localStorage.getItem('vietfashion_saved_outfits');
@@ -57,281 +39,210 @@ export default function App() {
       return [OUTFIT_SETS[0]];
     }
   });
-
-  // Favorite items
   const [favoriteItemIds, setFavoriteItemIds] = useState<string[]>(['ao-dai-do-gam']);
-
-  // Modals state
   const [isDatasetModalOpen, setIsDatasetModalOpen] = useState(false);
   const [isLookbookModalOpen, setIsLookbookModalOpen] = useState(false);
   const [isGuidelinesModalOpen, setIsGuidelinesModalOpen] = useState(false);
 
-  // Sync to local storage
   useEffect(() => {
     try {
       localStorage.setItem('vietfashion_saved_outfits', JSON.stringify(savedOutfits));
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     }
   }, [savedOutfits]);
 
-  // Compute matched / ranked outfits based on the 3 inputs using intelligent semantic matching
-  const matchResults: MatchResult[] = React.useMemo(() => {
-    return findMatchingOutfits(selectedContext, selectedStyle, selectedColor);
-  }, [selectedContext, selectedStyle, selectedColor]);
-
-  const matchedOutfits = React.useMemo(() => {
-    return matchResults.map((r) => r.outfit);
-  }, [matchResults]);
-
+  const matchResults: MatchResult[] = React.useMemo(
+    () => findMatchingOutfits(selectedContext, selectedStyle, selectedColor),
+    [selectedContext, selectedStyle, selectedColor]
+  );
+  const matchedOutfits = React.useMemo(
+    () => matchResults.map((result) => result.outfit),
+    [matchResults]
+  );
   const activeOutfit = matchedOutfits[currentOutfitIndex] || matchedOutfits[0] || OUTFIT_SETS[0];
+  const isCurrentOutfitSaved = savedOutfits.some((outfit) => outfit.id === activeOutfit.id);
+
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleStep1Submit = () => {
     setCurrentOutfitIndex(0);
-    setCurrentStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    goToStep(2);
   };
 
   const handleSelectGarmentItem = (item: GarmentItem) => {
     setSelectedItemForDetail(item);
-    setCurrentStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    goToStep(3);
   };
 
   const handleSaveToggleOutfit = (outfit: OutfitSet) => {
-    if (savedOutfits.some((o) => o.id === outfit.id)) {
-      setSavedOutfits((prev) => prev.filter((o) => o.id !== outfit.id));
-    } else {
-      setSavedOutfits((prev) => [...prev, outfit]);
-    }
-  };
-
-  const handleToggleFavoriteItem = (itemId: string) => {
-    setFavoriteItemIds((prev) =>
-      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+    setSavedOutfits((current) =>
+      current.some((saved) => saved.id === outfit.id)
+        ? current.filter((saved) => saved.id !== outfit.id)
+        : [...current, outfit]
     );
   };
 
-  const isCurrentOutfitSaved = savedOutfits.some((o) => o.id === activeOutfit.id);
-
   return (
-    <div className="relative min-h-screen text-stone-900 flex flex-col font-['Be_Vietnam_Pro',sans-serif] overflow-x-hidden">
-      {/* Animated Cultural Background: Đông Sơn Drum, Floating Petals, Silk Waves */}
+    <div className="galileo-page relative flex min-h-screen flex-col overflow-x-hidden text-[#141414]">
       <CulturalAnimatedBackground />
 
-      {/* Top Application Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200/80 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo & Brand */}
-          <div
-            onClick={() => setCurrentStep(1)}
-            className="flex items-center gap-2.5 cursor-pointer group"
+      <header className="galileo-nav sticky top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-5">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between rounded-full border border-black/10 bg-white/90 px-4 shadow-[0_10px_35px_rgba(0,0,0,0.08)] backdrop-blur-xl sm:px-6">
+          <button
+            type="button"
+            onClick={() => goToStep(1)}
+            className="group flex items-center gap-2.5"
+            aria-label="Về trang đầu"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-700 to-amber-700 flex items-center justify-center text-white shadow-sm transition group-hover:scale-105">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current text-amber-200">
-                <path d="M12 2C12 2 9 6.5 9 10C9 12.5 10.5 14 12 14C13.5 14 15 12.5 15 10C15 6.5 12 2 12 2ZM5.5 10C4 11.5 3 13.5 3 16C3 19 6 21 12 21C18 21 21 19 21 16C21 13.5 20 11.5 18.5 10C17.5 12.5 15.5 14.5 12 15C8.5 14.5 6.5 12.5 5.5 10Z" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-bold tracking-wider font-['Playfair_Display',serif] text-stone-900">
-                  Boss of delay
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
-                  Gen Z Heritage
-                </span>
-              </div>
-              <p className="text-[11px] text-stone-500 hidden sm:block">
-                Khám phá & phối trang phục truyền thống Việt Nam
-              </p>
-            </div>
-          </div>
+            <span className="brand-mark" aria-hidden="true"><span /><span /></span>
+            <span className="text-sm font-black tracking-[-0.03em] sm:text-base">Boss of delay</span>
+          </button>
 
-          {/* Quick Action Navigation Buttons */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Cultural safety button */}
-            <button
-              type="button"
-              onClick={() => setIsGuidelinesModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded-xl transition"
-              title="Cẩm nang & Cảnh báo văn hóa"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden md:inline">Cẩm nang văn hóa</span>
-            </button>
+          <nav className="hidden items-center gap-8 text-xs font-semibold text-black/65 lg:flex">
+            <button onClick={() => goToStep(1)} className="transition hover:text-black">Phối đồ</button>
+            <button onClick={() => setIsDatasetModalOpen(true)} className="transition hover:text-black">Bộ sưu tập</button>
+            <button onClick={() => setIsGuidelinesModalOpen(true)} className="transition hover:text-black">Câu chuyện di sản</button>
+          </nav>
 
-            {/* VietFashion Dataset Explorer */}
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setIsDatasetModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-950 hover:text-stone-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition shadow-2xs"
-              title="PostgreSQL Database: vietfashion (Port 5433) - 35 Ảnh Thật"
+              className="nav-icon-button dataset-nav-button"
+              title="Mở VietFashion Dataset"
             >
-              <Database className="w-3.5 h-3.5 text-amber-800" />
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="hidden sm:inline">PostgreSQL: 35 Ảnh Thật</span>
-              <span className="sm:hidden">Postgres</span>
+              <Database className="h-4 w-4" />
             </button>
-
-            {/* Saved Lookbook */}
             <button
               type="button"
               onClick={() => setIsLookbookModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-700 hover:bg-red-800 rounded-xl shadow-xs transition"
-              title="Mở Lookbook đã lưu"
+              className="galileo-primary-button h-10 px-4 text-xs sm:px-5"
             >
-              <Bookmark className="w-3.5 h-3.5" />
-              <span>Lookbook ({savedOutfits.length})</span>
+              <Bookmark className="h-4 w-4" />
+              <span className="hidden sm:inline">Lookbook</span>
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-[10px] text-white">
+                {savedOutfits.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsGuidelinesModalOpen(true)}
+              className="nav-icon-button mobile-menu-button"
+              aria-label="Mở câu chuyện di sản"
+            >
+              <Menu className="h-4 w-4" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* 4-Step Process Guide Header matching user request and screenshot */}
-      <div className="relative z-10">
-        <StepHeader
-          currentStep={currentStep}
-          onSelectStep={(step) => {
-            setCurrentStep(step);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
+      <div className="relative z-20 mx-auto mt-4 w-full max-w-7xl px-3 sm:px-5">
+        <StepHeader currentStep={currentStep} onSelectStep={goToStep} />
       </div>
 
-      {/* Main Dynamic Step Body */}
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 w-full">
+      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-3 pb-16 pt-5 sm:px-5 sm:pt-8">
         {currentStep === 1 && (
-          <div className="py-2">
-            <Step1InputForm
-              selectedContext={selectedContext}
-              onSelectContext={setSelectedContext}
-              selectedStyle={selectedStyle}
-              onSelectStyle={setSelectedStyle}
-              selectedColor={selectedColor}
-              onSelectColor={setSelectedColor}
-              onSubmit={handleStep1Submit}
-            />
-          </div>
+          <Step1InputForm
+            selectedContext={selectedContext}
+            onSelectContext={setSelectedContext}
+            selectedStyle={selectedStyle}
+            onSelectStyle={setSelectedStyle}
+            selectedColor={selectedColor}
+            onSelectColor={setSelectedColor}
+            onSubmit={handleStep1Submit}
+          />
         )}
 
         {currentStep === 2 && (
-          <div className="py-2">
-            <Step2OutfitSuggestions
-              outfits={matchedOutfits}
-              matchResults={matchResults}
-              currentIndex={currentOutfitIndex}
-              onSelectIndex={setCurrentOutfitIndex}
-              selectedContext={selectedContext}
-              selectedStyle={selectedStyle}
-              selectedColor={selectedColor}
-              onViewOutfitDetails={() => {
-                setCurrentStep(4);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onSelectItem={handleSelectGarmentItem}
-              onEditFilters={() => setCurrentStep(1)}
-              isSaved={isCurrentOutfitSaved}
-              onToggleSave={() => handleSaveToggleOutfit(activeOutfit)}
-            />
-          </div>
+          <Step2OutfitSuggestions
+            outfits={matchedOutfits}
+            matchResults={matchResults}
+            currentIndex={currentOutfitIndex}
+            onSelectIndex={setCurrentOutfitIndex}
+            selectedContext={selectedContext}
+            selectedStyle={selectedStyle}
+            selectedColor={selectedColor}
+            onViewOutfitDetails={() => goToStep(4)}
+            onSelectItem={handleSelectGarmentItem}
+            onEditFilters={() => goToStep(1)}
+            isSaved={isCurrentOutfitSaved}
+            onToggleSave={() => handleSaveToggleOutfit(activeOutfit)}
+          />
         )}
 
         {currentStep === 3 && (
-          <div className="py-2">
-            <Step3ItemDetail
-              item={selectedItemForDetail}
-              onBack={() => setCurrentStep(2)}
-              onProceedToOutfit={() => setCurrentStep(4)}
-              isFavorited={favoriteItemIds.includes(selectedItemForDetail.id)}
-              onToggleFavorite={() => handleToggleFavoriteItem(selectedItemForDetail.id)}
-            />
-          </div>
+          <Step3ItemDetail
+            item={selectedItemForDetail}
+            onBack={() => goToStep(2)}
+            onProceedToOutfit={() => goToStep(4)}
+            isFavorited={favoriteItemIds.includes(selectedItemForDetail.id)}
+            onToggleFavorite={() =>
+              setFavoriteItemIds((current) =>
+                current.includes(selectedItemForDetail.id)
+                  ? current.filter((id) => id !== selectedItemForDetail.id)
+                  : [...current, selectedItemForDetail.id]
+              )
+            }
+          />
         )}
 
         {currentStep === 4 && (
-          <div className="py-2">
-            <Step4CompleteOutfit
-              outfit={activeOutfit}
-              matchResult={matchResults[currentOutfitIndex] || matchResults[0]}
-              userQuery={{
-                context: selectedContext,
-                style: selectedStyle,
-                color: selectedColor
-              }}
-              onInspectItem={handleSelectGarmentItem}
-              onSaveOutfit={handleSaveToggleOutfit}
-              isSaved={isCurrentOutfitSaved}
-              onOpenDataset={() => setIsDatasetModalOpen(true)}
-            />
-          </div>
+          <Step4CompleteOutfit
+            outfit={activeOutfit}
+            matchResult={matchResults[currentOutfitIndex] || matchResults[0]}
+            userQuery={{ context: selectedContext, style: selectedStyle, color: selectedColor }}
+            onInspectItem={handleSelectGarmentItem}
+            onSaveOutfit={handleSaveToggleOutfit}
+            isSaved={isCurrentOutfitSaved}
+            onOpenDataset={() => setIsDatasetModalOpen(true)}
+          />
         )}
       </main>
 
-      {/* Global Modals */}
       <VietFashionDatasetModal
         isOpen={isDatasetModalOpen}
         onClose={() => setIsDatasetModalOpen(false)}
-        onSelectItem={(item) => {
-          handleSelectGarmentItem(item);
-        }}
+        onSelectItem={handleSelectGarmentItem}
       />
-
       <LookbookModal
         isOpen={isLookbookModalOpen}
         onClose={() => setIsLookbookModalOpen(false)}
         savedOutfits={savedOutfits}
-        onRemoveOutfit={(id) => setSavedOutfits((prev) => prev.filter((o) => o.id !== id))}
+        onRemoveOutfit={(id) => setSavedOutfits((current) => current.filter((outfit) => outfit.id !== id))}
         onSelectOutfit={(outfit) => {
-          const idx = matchedOutfits.findIndex((o) => o.id === outfit.id);
-          if (idx !== -1) {
-            setCurrentOutfitIndex(idx);
-          }
-          setCurrentStep(4);
+          const index = matchedOutfits.findIndex((candidate) => candidate.id === outfit.id);
+          if (index !== -1) setCurrentOutfitIndex(index);
+          goToStep(4);
         }}
       />
-
       <CulturalGuidelinesModal
         isOpen={isGuidelinesModalOpen}
         onClose={() => setIsGuidelinesModalOpen(false)}
       />
 
-      {/* App Footer */}
-      <footer className="relative z-10 bg-white/95 backdrop-blur-md border-t border-stone-200 mt-auto py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-red-700 text-white flex items-center justify-center font-serif text-[10px]">
-              B
+      <footer className="relative z-10 border-t border-black/15 bg-[#f4f1e8] px-5 py-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-sm font-black">
+              <span className="brand-mark brand-mark-small"><span /><span /></span>
+              Boss of delay
             </div>
-            <span>Boss of delay © 2026 · Di sản Việt trong thời trang thế hệ mới</span>
+            <p className="max-w-md text-xs leading-5 text-black/55">
+              Di sản Việt được kể lại bằng một trải nghiệm phối đồ mới, trực quan và tôn trọng nguyên bản.
+            </p>
           </div>
-
-          <div className="flex items-center gap-4 text-stone-600">
-            <button
-              type="button"
-              onClick={() => setIsGuidelinesModalOpen(true)}
-              className="hover:text-red-700 transition"
-            >
-              Chuẩn mực di sản
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
+            <button onClick={() => setIsGuidelinesModalOpen(true)} className="footer-link">
+              <ShieldCheck className="h-3.5 w-3.5" /> Chuẩn mực di sản
             </button>
-            <span aria-hidden="true">·</span>
-            <button
-              type="button"
-              onClick={() => setIsDatasetModalOpen(true)}
-              className="hover:text-red-700 transition"
-            >
-              Bảo tàng & Tài liệu gốc
+            <button onClick={() => setIsDatasetModalOpen(true)} className="footer-link">
+              Dữ liệu gốc <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
-            <span aria-hidden="true">·</span>
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentStep(1);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="hover:text-red-700 transition"
-            >
-              Phối đồ mới
-            </button>
+            <span className="px-2 text-black/35">© 2026</span>
           </div>
         </div>
       </footer>
