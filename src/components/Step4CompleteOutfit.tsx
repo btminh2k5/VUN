@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Bookmark, Check, ChevronDown, ExternalLink, Palette, RotateCw, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Bookmark, Check, ExternalLink, Palette } from 'lucide-react';
 import { GarmentItem, OutfitSet } from '../data/vietFashionData';
 import { MatchResult } from '../utils/matchingEngine';
 import { OutfitMockup2D } from './OutfitMockup2D';
@@ -12,16 +12,6 @@ interface Step4CompleteOutfitProps {
   isSaved: boolean;
   onOpenDataset: () => void;
   onBack: () => void;
-}
-
-interface StylingAdvice {
-  advice?: string;
-  genZConcept?: string;
-  stylingTips?: string[];
-  culturalCheck?: {
-    culturalRespectTips?: string;
-    cautions?: string;
-  };
 }
 
 type AccessoryOption = Pick<GarmentItem, 'id' | 'name' | 'category' | 'imageUrl' | 'colorHex'>;
@@ -44,11 +34,6 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
 }) => {
   const mainGarment = outfit.items.find((item) => item.category === 'main');
   const recommendation = outfit.recommendation;
-  const [showAdvisor, setShowAdvisor] = useState(false);
-  const [question, setQuestion] = useState('');
-  const [advice, setAdvice] = useState<StylingAdvice | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [adviceError, setAdviceError] = useState('');
   const [selectedAccessoryIds, setSelectedAccessoryIds] = useState<string[]>([]);
   const accessoryOptions = useMemo<AccessoryOption[]>(() => {
     const recommended = outfit.items.filter((item) => item.category !== 'main' && item.category !== 'pants');
@@ -78,33 +63,6 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
       ...outfit.items.filter((item) => item.category === 'main' || item.category === 'pants'),
       ...outfit.items.filter((item) => selectedAccessoryIds.includes(item.id)),
     ],
-  };
-
-  const askStylist = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (isLoading) return;
-    setIsLoading(true);
-    setAdviceError('');
-    try {
-      const response = await fetch('/api/ai-styling', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          context: outfit.context,
-          style: outfit.style,
-          color: outfit.primaryColor,
-          currentOutfit: { title: outfit.title, items: outfit.items.map((item) => item.name) },
-          question: question.trim() || 'Gợi ý cách tạo dáng và phối phụ kiện phù hợp với trang phục này.',
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || data.success === false) throw new Error('Không thể tải tư vấn lúc này. Vui lòng thử lại.');
-      setAdvice(data);
-    } catch {
-      setAdviceError('Không thể tải tư vấn lúc này. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -285,51 +243,6 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
           </div>
         </section>
       )}
-
-      <section className="rounded-3xl bg-stone-900 p-5 text-white sm:p-6">
-        <button
-          type="button"
-          onClick={() => setShowAdvisor((current) => !current)}
-          aria-expanded={showAdvisor}
-          aria-controls="outfit-stylist"
-          className="flex w-full items-center justify-between gap-4 text-left"
-        >
-          <span className="inline-flex items-center gap-3 text-sm font-bold"><Sparkles className="h-4 w-4 text-[#ffc21c]" />Tư vấn cách phối trang phục</span>
-          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${showAdvisor ? 'rotate-180' : ''}`} />
-        </button>
-        {showAdvisor && (
-          <div id="outfit-stylist" className="mt-5 space-y-4">
-            <form onSubmit={askStylist} className="flex flex-col gap-2 sm:flex-row">
-              <label htmlFor="stylist-question" className="sr-only">Câu hỏi về trang phục</label>
-              <input
-                id="stylist-question"
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                placeholder="Ví dụ: Phối giày và phụ kiện như thế nào?"
-                className="min-w-0 flex-1 rounded-xl border border-stone-600 bg-stone-800 px-4 py-3 text-xs text-white outline-none placeholder:text-stone-400 focus:border-[#ffc21c]"
-              />
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#ffc21c] px-5 py-3 text-xs font-bold text-stone-950 disabled:opacity-60"
-              >
-                {isLoading && <RotateCw className="h-3.5 w-3.5 animate-spin" />}
-                {isLoading ? 'Đang tư vấn…' : 'Gửi câu hỏi'}
-              </button>
-            </form>
-            {adviceError && <p role="alert" className="text-xs text-amber-200">{adviceError}</p>}
-            {advice && (
-              <div aria-live="polite" className="space-y-3 border-t border-stone-700 pt-4 text-xs leading-relaxed text-stone-200">
-                {advice.advice && <p className="whitespace-pre-line">{advice.advice}</p>}
-                {advice.genZConcept && <p>{advice.genZConcept}</p>}
-                {Array.isArray(advice.stylingTips) && <ul className="list-disc space-y-1 pl-4">{advice.stylingTips.map((tip, index) => <li key={index}>{tip}</li>)}</ul>}
-                {advice.culturalCheck?.culturalRespectTips && <p>{advice.culturalCheck.culturalRespectTips}</p>}
-                {advice.culturalCheck?.cautions && <p className="text-amber-200">{advice.culturalCheck.cautions}</p>}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
 
       <div className="flex justify-center">
         <button type="button" onClick={onOpenDataset} className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-stone-700 hover:text-black">
