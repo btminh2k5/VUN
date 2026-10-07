@@ -15,8 +15,6 @@ Bảng public.outfits trong database cũ, nếu có, không bị thay đổi; d�
 
 ## Cách tổ chức
 
-- `styling_items`: phụ kiện và giày dép; item_group là accessories hoặc footwear, type_code/category là loại, mỗi ảnh là một mẫu có dataset_path duy nhất. Màu và nguồn chưa biết để NULL. Bảng này chưa tự xác định phụ kiện nào hợp với áo nào; cột accessories dạng TEXT[] của garment_variants vẫn giữ nguyên.
-
 - `garment_types`: tên loại, vùng, sự kiện, phong cách, mô tả, nguồn gốc, ý nghĩa, lưu ý, nguồn tài liệu. Thông tin chung chỉ điền một lần cho mỗi loại.
 - `garment_variants`: loại áo liên quan, khóa nhập dataset_path, tên mẫu, nhóm Nữ/Nam, màu, URL ảnh, mô tả riêng, phụ kiện, nguồn và quyền sử dụng ảnh.
 - `outfit_catalog`: view ghép hai bảng để xem và lọc; sửa dữ liệu ở bảng gốc, không sửa trên view.
@@ -42,16 +40,6 @@ Trong garment_types: kiểm tra nhãn loại rồi điền mô tả, nguồn g�
 Chỉ đánh dấu reviewed sau khi nhóm kiểm chứng. Database kiểm tra giá trị trạng thái hợp lệ nhưng không tự xác minh nội dung, độ đầy đủ hoặc quyền sử dụng. Truy vấn website trong file 03 yêu cầu cả loại và mẫu đã reviewed nên ban đầu sẽ trả về rỗng.
 
 ## Khi thêm ảnh, màu hoặc loại mới
-
-### Phụ kiện và giày dép
-
-Đặt ảnh vào `public/images/dataset/accessories/<loại>/` hoặc `public/images/dataset/footwear/<loại>/`. Bổ sung nhãn vào `styling-mappings.json` nếu có loại mới, rồi chạy script Node bên dưới. Đọc thêm [hướng dẫn thư mục ảnh](../../../public/images/dataset/README.md).
-
-Với database hiện có, chạy lần lượt **05_styling_items_schema.sql → 06_import_styling_items.sql** trong Query Tool, không chạy lại 01. Cả 05 và 06 chạy lại được và không xóa dữ liệu; file 06 giữ nguyên các dòng đã nhập theo dataset_path. File 07_styling_queries.sql dùng để xem và kiểm tra dữ liệu. Màu hiện chưa tự phân tích, để NULL chờ cập nhật. Giữ draft đến khi kiểm tra nhãn.
-
-Tổng dataset hiện có 60 ảnh: 35 áo, 19 phụ kiện và 6 giày dép. Thêm ảnh không tự cập nhật database; cần chạy lại file SQL tương ứng. Docker mới nạp tự động cả hai nhóm; Docker với volume cũ dùng hướng dẫn cập nhật trong DOCKER.md.
-
-### Áo
 
 1. Đặt ảnh vào `public/images/dataset/<Nu hoặc Nam>/<mã loại>/<tiền tố>_<mã màu>.jpg`. Hỗ trợ jpg, jpeg, png, webp.
 2. Nếu có mã loại/màu mới, thêm tên hiển thị tương ứng trong `mappings.json`.

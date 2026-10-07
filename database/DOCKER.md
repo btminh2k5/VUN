@@ -29,8 +29,6 @@ Lần đầu Docker tải image postgres:18, tạo database vietfashion, rồi c
 1. 01_schema.sql: hai bảng và view trong schema wardrobe.
 2. 02_import_dataset.sql: 5 loại áo, 35 mẫu ảnh.
 3. 04_update_type_information.sql: thông tin văn hóa có nguồn.
-4. 05_styling_items_schema.sql: bảng styling_items cho phụ kiện và giày dép.
-5. 06_import_styling_items.sql: 19 phụ kiện và 6 mẫu giày dép.
 
 Compose ánh xạ trực tiếp các file hiện có vào /docker-entrypoint-initdb.d, không cần tạo bản sao schema.sql/seed.sql hoặc Dockerfile. File truy vấn 03 không được chạy tự động.
 
@@ -47,21 +45,6 @@ docker compose exec postgres psql -U vietfashion -d vietfashion -c "SELECT categ
 Kết quả ban đầu: áo bà ba 8, áo dài 7, áo giao lĩnh 5, áo ngũ thân tay chẽn 7, áo yếm 8. Nếu đổi POSTGRES_USER/POSTGRES_DB, thay đối số -U/-d tương ứng.
 
 ## 4. Xem trong pgAdmin đang có trên máy
-
-### Cập nhật container đã tạo trước khi thêm phụ kiện
-
-Tại thư mục gốc dự án, chạy các lệnh sau (giữ nguyên volume dữ liệu):
-
-```powershell
-docker compose up -d
-docker compose exec postgres psql -U vietfashion -d vietfashion -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/04_styling_items_schema.sql
-docker compose exec postgres psql -U vietfashion -d vietfashion -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/05_import_styling_items.sql
-docker compose exec postgres psql -U vietfashion -d vietfashion -c "SELECT item_group, count(*) FROM wardrobe.styling_items GROUP BY item_group;"
-```
-
-Lệnh up cập nhật các mount SQL, không tự chạy migration trên volume cũ. Kết quả: accessories 19, footwear 6. Có thể chạy lại hai file này, không tạo dòng trùng; dữ liệu áo giữ nguyên. Nếu tài khoản/database trong .env khác mặc định, đổi -U/-d tương ứng. Script generate-import.mjs nay sinh cả file nhập áo và file nhập phụ kiện; sau khi thêm phụ kiện chỉ cần nạp lại file 05_import_styling_items.sql trong container.
-
-### Kết nối pgAdmin
 
 Register → Server, đặt tên hiển thị VietFashion Docker. Trong Connection:
 
