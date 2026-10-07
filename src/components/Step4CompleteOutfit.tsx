@@ -16,6 +16,27 @@ interface Step4CompleteOutfitProps {
 
 type AccessoryOption = Pick<GarmentItem, 'id' | 'name' | 'category' | 'imageUrl' | 'colorHex'>;
 
+const ACCESSORY_GROUPS: Record<string, string> = {
+  nonla: 'headwear', nonquaithao: 'headwear', khanmoqua: 'headwear',
+  khanlua: 'scarf', khanran: 'scarf',
+  keptoc: 'hair', luoccaitoc: 'hair', tramcaitoc: 'hair',
+  tuicoi: 'bag', tuidayrut: 'bag', tuimay: 'bag', tuivai: 'bag', tuixachnho: 'bag',
+  quatgiay: 'fan', quatlua: 'fan',
+  bongtai: 'earrings', vongco: 'necklace', vongtay: 'bracelet', daylung: 'belt',
+};
+
+const GROUP_LABELS: Record<string, string> = {
+  headwear: 'Đội đầu', scarf: 'Khăn', hair: 'Phụ kiện tóc', bag: 'Túi',
+  fan: 'Quạt', earrings: 'Bông tai', necklace: 'Vòng cổ',
+  bracelet: 'Vòng tay', belt: 'Dây lưng', footwear: 'Giày dép',
+};
+
+function selectionGroup(item: AccessoryOption): string {
+  if (item.category === 'footwear' || item.imageUrl.includes('/footwear/')) return 'footwear';
+  const typeCode = item.imageUrl.split('/').at(-2)?.toLowerCase() || item.name;
+  return ACCESSORY_GROUPS[typeCode] || `accessory:${typeCode}`;
+}
+
 const FALLBACK_ACCESSORIES: AccessoryOption[] = [
   { id: 'fallback-non-la', name: 'Nón lá', category: 'headwear', imageUrl: '/images/dataset/accessories/nonla/nonla.jpg', colorHex: '#D6B98C' },
   { id: 'fallback-khan-lua', name: 'Khăn lụa', category: 'accessory', imageUrl: '/images/dataset/accessories/khanlua/khanlua.jpg', colorHex: '#B91C1C' },
@@ -38,7 +59,7 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   const accessoryOptions = useMemo<AccessoryOption[]>(() => {
     const recommended = outfit.items.filter((item) => item.category !== 'main' && item.category !== 'pants');
     const merged = [...recommended, ...FALLBACK_ACCESSORIES];
-    return merged.filter((item, index) => merged.findIndex((candidate) => candidate.name === item.name) === index).slice(0, 8);
+    return merged.filter((item, index) => merged.findIndex((candidate) => candidate.imageUrl === item.imageUrl) === index).slice(0, 8);
   }, [outfit]);
   const selectedAccessories = accessoryOptions.filter((item) => selectedAccessoryIds.includes(item.id));
   const referenceLines = mainGarment
@@ -53,15 +74,41 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   const referenceUrl = (outfit.culturalSources || []).find((source) => source.url)?.url || mainGarment?.verifiedSource.documentUrl;
   const hasReferenceUrl = Boolean(referenceUrl && referenceUrl !== '#' && /^https?:\/\//i.test(referenceUrl));
 
-  const toggleAccessory = (id: string) => {
-    setSelectedAccessoryIds((current) => current.includes(id) ? current.filter((itemId) => itemId !== id) : [...current, id]);
+  const toggleAccessory = (option: AccessoryOption) => {
+    setSelectedAccessoryIds((current) => {
+      if (current.includes(option.id)) return current.filter((id) => id !== option.id);
+      const group = selectionGroup(option);
+      return [
+        ...current.filter((id) => {
+          const selected = accessoryOptions.find((item) => item.id === id);
+          return selected && selectionGroup(selected) !== group;
+        }),
+        option.id,
+      ];
+    });
   };
 
+  const accessoryTemplate = mainGarment || outfit.items[0];
   const outfitWithAccessories: OutfitSet = {
     ...outfit,
     items: [
       ...outfit.items.filter((item) => item.category === 'main' || item.category === 'pants'),
-      ...outfit.items.filter((item) => selectedAccessoryIds.includes(item.id)),
+      ...selectedAccessories.map((option) => outfit.items.find((item) => item.id === option.id) || {
+        ...accessoryTemplate,
+        ...option,
+        type: option.name,
+        galleryImages: [option.imageUrl],
+        region: '',
+        era: '',
+        suitableContexts: [],
+        suitableStyles: [],
+        keyFeatures: '',
+        culturalMeaning: '',
+        material: '',
+        verifiedSource: { name: 'VietFashion Dataset', museum: 'VietFashion Dataset', citation: 'Ảnh trong bộ dữ liệu.', documentUrl: '#' },
+        genZStylingNote: '',
+        culturalDoAndDont: { dos: [], donts: [] },
+      }),
     ],
   };
 
@@ -101,30 +148,43 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
                 <h3 className="text-base font-extrabold text-stone-900 sm:text-lg">Chọn phụ kiện phù hợp</h3>
-                <p className="mt-1 text-xs text-stone-500">Nhấn vào phụ kiện để thêm hoặc bỏ khỏi bộ phối.</p>
+                <p className="mt-1 text-xs text-stone-500">Mỗi loại phụ kiện cùng công dụng và giày dép chỉ chọn một món. Nhấn món khác để thay thế.</p>
               </div>
               <span className="text-xs font-bold text-stone-500">Đã chọn {selectedAccessories.length}</span>
             </div>
-            <div className="grid max-h-[540px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:gap-3">
-              {accessoryOptions.map((item) => {
-                const selected = selectedAccessoryIds.includes(item.id);
+            <div className="max-h-[540px] space-y-4 overflow-y-auto pr-1">
+              {(['accessory', 'footwear'] as const).map((section) => {
+                const options = accessoryOptions.filter((item) => section === 'footwear'
+                  ? selectionGroup(item) === 'footwear'
+                  : selectionGroup(item) !== 'footwear');
+                if (!options.length) return null;
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => toggleAccessory(item.id)}
-                    className={`overflow-hidden rounded-2xl border text-left transition ${selected ? 'border-stone-900 bg-amber-50 ring-2 ring-[#ffc21c]' : 'border-stone-200 bg-stone-50 hover:border-stone-400'}`}
-                  >
-                    <div className="relative h-24 bg-white p-2 sm:h-32">
-                      <img src={item.imageUrl} alt={item.name} className="h-full w-full object-contain" />
-                      {selected && <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-stone-900 text-white"><Check className="h-4 w-4" /></span>}
+                  <div key={section}>
+                    <h4 className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">{section === 'footwear' ? 'Giày dép · chọn 1' : 'Phụ kiện'}</h4>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      {options.map((item) => {
+                        const selected = selectedAccessoryIds.includes(item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => toggleAccessory(item)}
+                            className={`overflow-hidden rounded-2xl border text-left transition ${selected ? 'border-stone-900 bg-amber-50 ring-2 ring-[#ffc21c]' : 'border-stone-200 bg-stone-50 hover:border-stone-400'}`}
+                          >
+                            <div className="relative h-24 bg-white p-2 sm:h-32">
+                              <img src={item.imageUrl} alt={item.name} className="h-full w-full object-contain" />
+                              {selected && <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-stone-900 text-white"><Check className="h-4 w-4" /></span>}
+                            </div>
+                            <div className="p-3">
+                              <p className="text-[9px] font-bold uppercase tracking-wide text-stone-400">{GROUP_LABELS[selectionGroup(item)] || 'Phụ kiện'}</p>
+                              <h4 className="mt-1 text-xs font-bold text-stone-900">{item.name}</h4>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div className="p-3">
-                      <p className="text-[9px] font-bold uppercase tracking-wide text-stone-400">{item.category === 'footwear' ? 'Giày dép' : 'Phụ kiện'}</p>
-                      <h4 className="mt-1 text-xs font-bold text-stone-900">{item.name}</h4>
-                    </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

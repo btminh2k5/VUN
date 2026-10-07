@@ -55,10 +55,16 @@ function colorHex(color: string, fallback: string): string {
 function toGarmentItem(item: ApiItem, template: GarmentItem, selectedColor: string): GarmentItem {
   const isGarment = item.group === 'garment';
   const sourceIsUrl = Boolean(item.source?.startsWith('http'));
+  const generatedSuffix = item.name.startsWith(`${item.category} — `)
+    ? item.name.slice(item.category.length + 3)
+    : '';
+  const displayName = !isGarment && /^[a-z0-9_-]+$/i.test(generatedSuffix)
+    ? item.category
+    : item.name;
   return {
     ...template,
     id: item.id,
-    name: item.name,
+    name: displayName,
     type: item.category,
     category: isGarment ? 'main' : item.group === 'footwear' ? 'footwear' : 'accessory',
     imageUrl: item.image_url,

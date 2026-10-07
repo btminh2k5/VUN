@@ -47,7 +47,7 @@ Chỉ đánh dấu reviewed sau khi nhóm kiểm chứng. Database kiểm tra gi
 
 Đặt ảnh vào `public/images/dataset/accessories/<loại>/` hoặc `public/images/dataset/footwear/<loại>/`. Bổ sung nhãn vào `styling-mappings.json` nếu có loại mới, rồi chạy script Node bên dưới. Đọc thêm [hướng dẫn thư mục ảnh](../../../public/images/dataset/README.md).
 
-Với database hiện có, chạy lần lượt **05_styling_items_schema.sql → 06_import_styling_items.sql** trong Query Tool, không chạy lại 01. Cả 05 và 06 chạy lại được và không xóa dữ liệu; file 06 giữ nguyên các dòng đã nhập theo dataset_path. File 07_styling_queries.sql dùng để xem và kiểm tra dữ liệu. Màu hiện chưa tự phân tích, để NULL chờ cập nhật. Giữ draft đến khi kiểm tra nhãn.
+Với database hiện có, chạy lần lượt **05_styling_items_schema.sql → 06_import_styling_items.sql** trong Query Tool, không chạy lại 01. Cả 05 và 06 chạy lại được và không xóa dữ liệu; file 06 giữ nguyên các dòng đã nhập theo dataset_path, chỉ đổi tên cũ được sinh tự động như `Nón lá — nonla` thành `Nón lá`. Tên đã sửa thủ công được giữ nguyên. File 07_styling_queries.sql dùng để xem và kiểm tra dữ liệu. Màu hiện chưa tự phân tích, để NULL chờ cập nhật. Giữ draft đến khi kiểm tra nhãn.
 
 Tổng dataset hiện có 60 ảnh: 35 áo, 19 phụ kiện và 6 giày dép. Thêm ảnh không tự cập nhật database; cần chạy lại file SQL tương ứng. Docker mới nạp tự động cả hai nhóm; Docker với volume cũ dùng hướng dẫn cập nhật trong DOCKER.md.
 
