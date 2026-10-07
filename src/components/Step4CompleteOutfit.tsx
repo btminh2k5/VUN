@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Bookmark, Check, ChevronDown, ExternalLink, Palette, RotateCw, Sparkles } from 'lucide-react';
 import { GarmentItem, OutfitSet } from '../data/vietFashionData';
 import { MatchResult } from '../utils/matchingEngine';
-import { GaussianSplatOutfitPreview } from './GaussianSplatOutfitPreview';
+import { OutfitMockup2D } from './OutfitMockup2D';
 
 interface Step4CompleteOutfitProps {
   outfit: OutfitSet;
@@ -57,11 +57,15 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   }, [outfit]);
   const selectedAccessories = accessoryOptions.filter((item) => selectedAccessoryIds.includes(item.id));
   const referenceLines = mainGarment
-    ? [mainGarment.verifiedSource.museum, mainGarment.verifiedSource.citation]
+    ? [
+        mainGarment.verifiedSource.museum,
+        mainGarment.verifiedSource.citation,
+        ...(outfit.culturalSources || []).map((source) => source.title),
+      ]
         .map((value) => value?.trim())
         .filter((value, index, values): value is string => Boolean(value) && values.findIndex((candidate) => candidate?.toLocaleLowerCase() === value?.toLocaleLowerCase()) === index)
     : [];
-  const referenceUrl = mainGarment?.verifiedSource.documentUrl;
+  const referenceUrl = (outfit.culturalSources || []).find((source) => source.url)?.url || mainGarment?.verifiedSource.documentUrl;
   const hasReferenceUrl = Boolean(referenceUrl && referenceUrl !== '#' && /^https?:\/\//i.test(referenceUrl));
 
   const toggleAccessory = (id: string) => {
@@ -171,11 +175,13 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
       </section>
 
       {selectedAccessories.length > 0 && (
-        <GaussianSplatOutfitPreview
-          baseColor={outfit.model3DConfig.baseColor}
-          trimColor={outfit.model3DConfig.trimColor}
-          accessoryColors={selectedAccessories.map((item) => item.colorHex)}
-          accessoryNames={selectedAccessories.map((item) => item.name)}
+        <OutfitMockup2D
+          garmentName={mainGarment?.name || outfit.title}
+          garmentImage={mainGarment?.imageUrl || outfit.modelImage}
+          accessories={selectedAccessories}
+          background={outfit.mockup2D?.background}
+          width={outfit.mockup2D?.width}
+          height={outfit.mockup2D?.height}
         />
       )}
 

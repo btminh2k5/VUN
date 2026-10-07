@@ -117,7 +117,7 @@ Hãy phân tích và trả về định dạng JSON thuần túy (không bọc t
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -136,7 +136,7 @@ Hãy phân tích và trả về định dạng JSON thuần túy (không bọc t
 
     return res.json({
       success: true,
-      source: 'gemini-3.8-flash',
+      source: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
       ...parsedData
     });
   } catch (error: any) {

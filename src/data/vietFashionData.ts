@@ -47,6 +47,21 @@ export interface OutfitSet {
     collarHeight: number;
   };
   items: GarmentItem[];
+  mockup2D?: {
+    width: number;
+    height: number;
+    background: string;
+    layers: Array<{
+      itemId: string;
+      role: 'garment' | 'accessories' | 'footwear';
+      imageUrl: string;
+      zIndex: number;
+    }>;
+  };
+  culturalSources?: Array<{
+    title: string;
+    url?: string | null;
+  }>;
   colorHarmony: {
     score: number;
     palette: string[];

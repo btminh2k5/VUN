@@ -4,7 +4,15 @@ import re
 import unicodedata
 from typing import Any
 
-from .models import Item, OutfitRecommendation, RecommendationRequest, ScoreBreakdown
+from .models import (
+    CulturalSource,
+    Item,
+    MockupLayer,
+    OutfitMockup2D,
+    OutfitRecommendation,
+    RecommendationRequest,
+    ScoreBreakdown,
+)
 
 
 WEIGHTS = {"color": 0.25, "style": 0.20, "occasion": 0.20, "cultural": 0.35}
@@ -113,6 +121,55 @@ def make_item(raw: dict[str, Any], group: str) -> Item:
     )
 
 
+def calculate_score(color: float, style: float, occasion: float, cultural: float) -> float:
+    return round(
+        color * WEIGHTS["color"]
+        + style * WEIGHTS["style"]
+        + occasion * WEIGHTS["occasion"]
+        + cultural * WEIGHTS["cultural"],
+        1,
+    )
+
+
+def build_warnings(cultural: float, additions: tuple[dict[str, Any], ...]) -> list[str]:
+    warnings: list[str] = []
+    if cultural < 7.5:
+        warnings.append("Phụ kiện mang tính biến tấu; nên giữ phom và cách mặc nguyên bản của trang phục chính.")
+    if any(item.get("review_status") != "reviewed" for item in additions):
+        warnings.append("Metadata phụ kiện đang chờ kiểm duyệt; hãy đối chiếu nguồn trước khi dùng trong bối cảnh nghi lễ.")
+    return warnings
+
+
+def build_cultural_sources(raw_items: tuple[dict[str, Any], ...]) -> list[CulturalSource]:
+    sources: list[CulturalSource] = []
+    seen: set[str] = set()
+    for item in raw_items:
+        source = str(item.get("source") or "").strip()
+        if not source or source.casefold() in seen:
+            continue
+        seen.add(source.casefold())
+        sources.append(CulturalSource(
+            title=source,
+            url=source if source.startswith(("http://", "https://")) else None,
+        ))
+    return sources
+
+
+def build_mockup_2d(items: list[Item]) -> OutfitMockup2D:
+    role_order = {"garment": 10, "accessories": 20, "footwear": 30}
+    return OutfitMockup2D(
+        layers=[
+            MockupLayer(
+                item_id=item.id,
+                role=item.group,
+                image_url=item.image_url,
+                z_index=role_order[item.group],
+            )
+            for item in items
+        ]
+    )
+
+
 def build_recommendations(
     request: RecommendationRequest,
     garments: list[dict[str, Any]],
@@ -155,18 +212,14 @@ def build_recommendations(
             addition_occasion = sum(item_affinity(item, OCCASION_MATCHES, request.occasion) for item in additions) / max(1, len(additions))
             occasion = round(garment_occasion * 0.65 + addition_occasion * 0.35, 1)
             cultural = cultural_score(garment, additions)
-            total = round((color * WEIGHTS["color"] + style * WEIGHTS["style"] + occasion * WEIGHTS["occasion"] + cultural * WEIGHTS["cultural"]), 1)
-
-            warnings: list[str] = []
-            if cultural < 7.5:
-                warnings.append("Phụ kiện mang tính biến tấu; nên giữ phom và cách mặc nguyên bản của trang phục chính.")
-            if any(item.get("review_status") != "reviewed" for item in additions):
-                warnings.append("Metadata phụ kiện đang chờ kiểm duyệt; hãy đối chiếu nguồn trước khi dùng trong bối cảnh nghi lễ.")
+            total = calculate_score(color, style, occasion, cultural)
+            warnings = build_warnings(cultural, additions)
 
             parts = [garment.get("name")]
             parts.extend(item.get("category") for item in additions)
             digest = hashlib.sha1("|".join(str(part) for part in parts).encode("utf-8")).hexdigest()[:12]
             items = [make_item(garment, "garment")] + [make_item(item, str(item.get("item_group"))) for item in additions]
+            raw_items = (garment, *additions)
             candidates.append(OutfitRecommendation(
                 id=f"outfit-{digest}",
                 title=" + ".join(str(part) for part in parts),
@@ -175,6 +228,8 @@ def build_recommendations(
                 score_breakdown=ScoreBreakdown(color=color, style=style, occasion=occasion, cultural=cultural),
                 explanation=f"{garment.get('name')} bám sát tông {request.color}; phụ kiện được chọn theo phong cách {request.style} và bối cảnh {request.occasion}.",
                 warnings=warnings,
+                cultural_sources=build_cultural_sources(raw_items),
+                mockup_2d=build_mockup_2d(items),
             ))
 
     candidates.sort(key=lambda item: item.score, reverse=True)

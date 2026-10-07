@@ -21,6 +21,18 @@ interface ApiRecommendation {
   score_breakdown: { color: number; style: number; occasion: number; cultural: number };
   explanation: string;
   warnings: string[];
+  cultural_sources: Array<{ title: string; url?: string | null }>;
+  mockup_2d: {
+    width: number;
+    height: number;
+    background: string;
+    layers: Array<{
+      item_id: string;
+      role: 'garment' | 'accessories' | 'footwear';
+      image_url: string;
+      z_index: number;
+    }>;
+  };
 }
 
 interface ApiResponse {
@@ -98,6 +110,18 @@ export async function fetchRecommendations(
       modelImage: main.imageUrl,
       model3DConfig: { ...template.model3DConfig, baseColor: selectedHex },
       items,
+      mockup2D: recommendation.mockup_2d ? {
+        width: recommendation.mockup_2d.width,
+        height: recommendation.mockup_2d.height,
+        background: recommendation.mockup_2d.background,
+        layers: recommendation.mockup_2d.layers.map((layer) => ({
+          itemId: layer.item_id,
+          role: layer.role,
+          imageUrl: layer.image_url,
+          zIndex: layer.z_index,
+        })),
+      } : undefined,
+      culturalSources: recommendation.cultural_sources || [],
       colorHarmony: {
         ...template.colorHarmony,
         score: Math.round(recommendation.score_breakdown.color * 10),

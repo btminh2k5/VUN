@@ -30,6 +30,25 @@ class ScoreBreakdown(BaseModel):
     cultural: float
 
 
+class CulturalSource(BaseModel):
+    title: str
+    url: str | None = None
+
+
+class MockupLayer(BaseModel):
+    item_id: str
+    role: Literal["garment", "accessories", "footwear"]
+    image_url: str
+    z_index: int
+
+
+class OutfitMockup2D(BaseModel):
+    width: int = 1080
+    height: int = 1350
+    background: str = "#F5F2EA"
+    layers: list[MockupLayer]
+
+
 class OutfitRecommendation(BaseModel):
     id: str
     title: str
@@ -37,7 +56,15 @@ class OutfitRecommendation(BaseModel):
     score: float
     score_breakdown: ScoreBreakdown
     explanation: str
-    warnings: list[str] = []
+    warnings: list[str] = Field(default_factory=list)
+    cultural_sources: list[CulturalSource] = Field(default_factory=list)
+    mockup_2d: OutfitMockup2D
+
+
+class LLMRecommendationResult(BaseModel):
+    id: str = Field(min_length=1)
+    explanation: str = Field(min_length=1, max_length=1200)
+    warnings: list[str] = Field(default_factory=list, max_length=5)
 
 
 class RecommendationResponse(BaseModel):
