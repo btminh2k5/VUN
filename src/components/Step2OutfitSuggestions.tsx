@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, ArrowRight, RotateCw, SlidersHorizontal } from 'lucide-react';
+import { AlertCircle, ArrowRight, Database, HardDrive, RotateCw, SlidersHorizontal } from 'lucide-react';
 import { OutfitSet } from '../data/vietFashionData';
 
 interface Step2OutfitSuggestionsProps {
@@ -9,6 +9,8 @@ interface Step2OutfitSuggestionsProps {
   onEditFilters: () => void;
   isLoading?: boolean;
   error?: string;
+  // true = đang dùng dữ liệu dự phòng cục bộ thay vì kết quả từ PostgreSQL.
+  usingFallbackData?: boolean;
 }
 
 export const Step2OutfitSuggestions: React.FC<Step2OutfitSuggestionsProps> = ({
@@ -17,13 +19,27 @@ export const Step2OutfitSuggestions: React.FC<Step2OutfitSuggestionsProps> = ({
   onSelectOutfit,
   onEditFilters,
   isLoading = false,
-  error = ''
+  error = '',
+  usingFallbackData = false
 }) => (
   <section className="mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-black/10 bg-white shadow-[0_20px_55px_rgba(0,0,0,0.08)]">
     <div className="flex flex-col gap-5 border-b border-black/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-      <h2 className="text-2xl font-black tracking-[-0.045em] sm:text-3xl">
-        Các mẫu áo phù hợp
-      </h2>
+      <div>
+        <h2 className="text-2xl font-black tracking-[-0.045em] sm:text-3xl">
+          Các mẫu áo phù hợp
+        </h2>
+        {/* Nguồn dữ liệu luôn hiện, không chỉ khi lỗi — người dùng cần biết
+            đang xem kết quả thật từ database hay dữ liệu dự phòng. */}
+        {!isLoading && outfits.length > 0 && (
+          <p className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold ${
+            usingFallbackData ? 'bg-amber-100 text-amber-900' : 'bg-stone-100 text-stone-600'
+          }`}>
+            {usingFallbackData
+              ? <><HardDrive className="h-3 w-3" /> Dữ liệu dự phòng cục bộ · {outfits.length} gợi ý</>
+              : <><Database className="h-3 w-3" /> PostgreSQL qua engine phối đồ · {outfits.length} gợi ý xếp theo điểm</>}
+          </p>
+        )}
+      </div>
       <button
         type="button"
         onClick={onEditFilters}
@@ -45,12 +61,21 @@ export const Step2OutfitSuggestions: React.FC<Step2OutfitSuggestionsProps> = ({
         {error && (
           <div className="mx-5 mt-5 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 sm:mx-8">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <p><strong>FastAPI chưa phản hồi.</strong> {error} Đang hiển thị gợi ý cục bộ để bạn vẫn có thể tiếp tục.</p>
+            <p><strong>FastAPI chưa phản hồi.</strong> {error} Đang hiển thị dữ liệu dự phòng cục bộ để bạn vẫn có thể tiếp tục — đây không phải kết quả của engine phối đồ.</p>
           </div>
         )}
         <ul className="divide-y divide-black/10 px-5 sm:px-8">
         {outfits.map((outfit, index) => {
-          const name = outfit.items[0]?.name || outfit.title.replace(/^Gợi ý:\s*/i, '');
+          const main = outfit.items.find((item) => item.category === 'main') || outfit.items[0];
+          const name = main?.name || outfit.title.replace(/^Gợi ý:\s*/i, '');
+          // Hiển thị phụ kiện và điểm: trước đây mỗi dòng chỉ có ảnh + tên áo +
+          // tên nhóm, nên hai gợi ý cùng chiếc áo khác phụ kiện trông giống y
+          // hệt nhau và người dùng tưởng hệ thống gợi ý trùng.
+          const extras = outfit.items
+            .filter((item) => item !== main)
+            .map((item) => item.name || item.type)
+            .filter(Boolean);
+          const score = outfit.recommendation?.score;
           return (
             <li key={outfit.id}>
               <button
@@ -62,10 +87,20 @@ export const Step2OutfitSuggestions: React.FC<Step2OutfitSuggestionsProps> = ({
                   <img src={outfit.modelImage} alt="" className="h-16 w-14 shrink-0 rounded-xl border border-black/10 object-cover" />
                   <span className="min-w-0">
                     <span className="block">{name}</span>
-                    <span className="mt-1 block truncate text-xs font-medium text-black/45">{outfit.categoryName}</span>
+                    <span className="mt-1 block truncate text-xs font-medium text-black/45">
+                      {extras.length ? extras.join(' · ') : outfit.categoryName}
+                    </span>
                   </span>
                 </span>
-                <span className="ml-auto hidden shrink-0 text-xs font-extrabold text-[#a83d23] sm:inline">Xem gợi ý</span>
+                {typeof score === 'number' && (
+                  <span
+                    title="Điểm engine phối đồ"
+                    className="ml-auto shrink-0 rounded-full bg-[#f4f1e8] px-2.5 py-1 text-xs font-extrabold tabular-nums text-stone-700"
+                  >
+                    {score.toFixed(1)}
+                  </span>
+                )}
+                <span className="hidden shrink-0 text-xs font-extrabold text-[#a83d23] sm:inline">Xem gợi ý</span>
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f4f1e8] transition group-hover:bg-[#ffc21c] group-hover:text-black">
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </span>

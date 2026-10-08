@@ -48,10 +48,18 @@ export const Step3ItemDetail: React.FC<Step3ItemDetailProps> = ({
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden sm:inline">Dữ liệu chuẩn xác:</span> {item.verifiedSource.museum}
-          </div>
+          {/* Nhãn nguồn chỉ hiện khi có nguồn thật. Không có nguồn thì nói là
+              chưa có, chứ không hiện nhãn "chuẩn xác" trên dữ liệu trống. */}
+          {item.verifiedSource?.museum ? (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Nguồn:</span> {item.verifiedSource.museum}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-xs text-stone-600 bg-stone-100 px-3 py-1 rounded-full border border-stone-200">
+              Chưa có nguồn kiểm chứng
+            </div>
+          )}
 
           <button
             type="button"
@@ -111,13 +119,13 @@ export const Step3ItemDetail: React.FC<Step3ItemDetailProps> = ({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-amber-950">
-                  Nguồn nghiên cứu: {item.verifiedSource.museum}
+                  Nguồn nghiên cứu: {item.verifiedSource?.museum || 'chưa có'}
                 </p>
                 <p className="text-[11px] text-amber-900/80 mt-0.5 leading-relaxed">
-                  {item.verifiedSource.citation}
+                  {item.verifiedSource?.citation || 'Chưa có trích dẫn nguồn cho món này trong database.'}
                 </p>
                 <a
-                  href={item.verifiedSource.documentUrl}
+                  href={item.verifiedSource?.documentUrl || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-amber-900 font-bold hover:underline mt-2"
@@ -161,7 +169,9 @@ export const Step3ItemDetail: React.FC<Step3ItemDetailProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pb-2.5 border-b border-stone-200/80">
                 <span className="sm:col-span-4 text-stone-500 font-semibold">Bối cảnh phù hợp</span>
-                <span className="sm:col-span-8 font-medium text-stone-800">{item.suitableContexts.join(', ')}</span>
+                <span className="sm:col-span-8 font-medium text-stone-800">
+                  {item.suitableContexts?.length ? item.suitableContexts.join(', ') : <em className="text-stone-400 not-italic">Chưa có dữ liệu</em>}
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pb-2.5 border-b border-stone-200/80">
@@ -201,7 +211,7 @@ export const Step3ItemDetail: React.FC<Step3ItemDetailProps> = ({
                   <span>Nên làm (Tôn trọng di sản):</span>
                 </span>
                 <ul className="text-xs text-emerald-900 space-y-1 list-disc list-inside">
-                  {item.culturalDoAndDont.dos.map((d, i) => (
+                  {(item.culturalDoAndDont?.dos ?? []).map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
                 </ul>
@@ -213,7 +223,7 @@ export const Step3ItemDetail: React.FC<Step3ItemDetailProps> = ({
                   <span>Cần tránh (Phòng sai lệch di sản):</span>
                 </span>
                 <ul className="text-xs text-rose-900 space-y-1 list-disc list-inside">
-                  {item.culturalDoAndDont.donts.map((d, i) => (
+                  {(item.culturalDoAndDont?.donts ?? []).map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
                 </ul>

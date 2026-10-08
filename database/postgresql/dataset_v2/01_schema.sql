@@ -10,6 +10,13 @@ CREATE TABLE wardrobe.garment_types (
     style TEXT[] NOT NULL DEFAULT '{}',
     description TEXT,
     origin TEXT,
+    -- Các cột dưới đây giao diện đang cần hiển thị. Trước đây frontend lấy từ
+    -- OUTFIT_SETS hardcode và hiện chúng như dữ liệu đã kiểm chứng. Để NULL cho
+    -- tới khi có nguồn: giao diện ẩn field NULL, tốt hơn là hiện giá trị bịa.
+    era TEXT,
+    material TEXT,
+    do_notes TEXT[] NOT NULL DEFAULT '{}',
+    dont_notes TEXT[] NOT NULL DEFAULT '{}',
     cultural_meaning TEXT,
     cultural_notes TEXT,
     source TEXT,
@@ -23,7 +30,6 @@ CREATE TABLE wardrobe.garment_variants (
     garment_type_id BIGINT NOT NULL REFERENCES wardrobe.garment_types(id),
     dataset_path TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
-    audience TEXT,
     color TEXT NOT NULL,
     image_url TEXT NOT NULL,
     description TEXT,
@@ -50,10 +56,11 @@ FOR EACH ROW EXECUTE FUNCTION wardrobe.touch_updated_at();
 
 -- View gives one spreadsheet-like listing without duplicating shared information.
 CREATE VIEW wardrobe.outfit_catalog AS
-SELECT v.id, t.name AS category, v.name, v.audience, v.color,
+SELECT v.id, t.name AS category, v.name, v.color,
        t.region, t.occasion, t.style, v.image_url, v.dataset_path,
        t.description AS type_description, v.description AS variant_description,
-       t.origin, t.cultural_meaning, t.cultural_notes, t.source,
+       t.origin, t.era, t.material, t.do_notes, t.dont_notes,
+       t.cultural_meaning, t.cultural_notes, t.source,
        v.accessories, v.image_source, v.image_license,
        t.review_status AS type_review_status, v.review_status AS image_review_status
 FROM wardrobe.garment_variants v

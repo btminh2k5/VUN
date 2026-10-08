@@ -118,7 +118,9 @@ export const LookbookModal: React.FC<LookbookModalProps> = ({
                     <div className="text-xs space-y-1.5 text-stone-700">
                       <p><strong>Bối cảnh:</strong> {outfit.context}</p>
                       <p><strong>Phong cách:</strong> {outfit.style}</p>
-                      <p><strong>Hài hòa màu sắc:</strong> {outfit.colorHarmony.element}</p>
+                      {outfit.colorHarmony.element && (
+                        <p><strong>Hài hòa màu sắc:</strong> {outfit.colorHarmony.element}</p>
+                      )}
                       <p><strong>Số lượng món:</strong> {outfit.items.length} món</p>
                     </div>
                     <button

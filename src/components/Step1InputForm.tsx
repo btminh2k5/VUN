@@ -8,6 +8,11 @@ import {
   Shirt,
   Sparkles
 } from 'lucide-react';
+import { REAL_DATASET_35_ITEMS } from '../data/vietFashionData';
+
+// Đếm từ dữ liệu để các con số trên giao diện không lệch khi dataset đổi.
+const DATASET_IMAGE_COUNT = REAL_DATASET_35_ITEMS.length;
+const DATASET_CATEGORY_COUNT = new Set(REAL_DATASET_35_ITEMS.map((item) => item.category)).size;
 
 interface Step1InputFormProps {
   selectedContext: string;
@@ -59,7 +64,7 @@ export const Step1InputForm: React.FC<Step1InputFormProps> = ({
                   <span key={color} className="h-5 w-5 rounded-full border-2 border-white" style={{ backgroundColor: color }} />
                 ))}
               </span>
-              35 mẫu thật · 5 dòng trang phục
+              {DATASET_IMAGE_COUNT} mẫu thật · {DATASET_CATEGORY_COUNT} dòng trang phục
             </div>
 
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-black/45">VietFashion · AI Stylist</p>
@@ -83,18 +88,18 @@ export const Step1InputForm: React.FC<Step1InputFormProps> = ({
           <div className="fashion-stage" aria-label="Bộ sưu tập trang phục Việt">
             <div className="stage-pattern" />
             <div className="fashion-card fashion-card-left">
-              <img src="/images/dataset/Nu/aoyem/yem_xanh.jpg" alt="Áo yếm xanh truyền thống" />
+              <img src="/images/dataset/aoyem/yem_xanh.jpg" alt="Áo yếm xanh truyền thống" />
               <span>Yếm đào</span>
             </div>
             <div className="fashion-card fashion-card-main">
-              <img src="/images/dataset/Nu/aodai/ad_do.jpg" alt="Áo dài đỏ truyền thống" />
+              <img src="/images/dataset/aodai/ad_do.jpg" alt="Áo dài đỏ truyền thống" />
               <div className="fashion-card-caption">
                 <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-black/45">Gợi ý nổi bật</span>
                 <strong>Áo dài gấm đỏ</strong>
               </div>
             </div>
             <div className="fashion-card fashion-card-right">
-              <img src="/images/dataset/Nu/aobaba/BB_xanhcom.jpg" alt="Áo bà ba xanh cốm" />
+              <img src="/images/dataset/aobaba/BB_xanhcom.jpg" alt="Áo bà ba xanh cốm" />
               <span>Áo bà ba</span>
             </div>
             <div className="stage-sticker stage-sticker-top"><Sparkles className="h-4 w-4" /> Phối bởi AI</div>
@@ -192,7 +197,7 @@ export const Step1InputForm: React.FC<Step1InputFormProps> = ({
       <div className="grid gap-3 sm:grid-cols-3">
         {[
           ['01', 'Hiểu đúng nhu cầu', 'Phân tích bối cảnh và thẩm mỹ cá nhân.'],
-          ['02', 'Tìm từ dữ liệu thật', 'Đối chiếu trực tiếp 35 mẫu trang phục.'],
+          ['02', 'Tìm từ dữ liệu thật', `Đối chiếu trực tiếp ${DATASET_IMAGE_COUNT} mẫu trang phục.`],
           ['03', 'Kể trọn câu chuyện', 'Nguồn gốc, cách mặc và lưu ý văn hóa.']
         ].map(([number, title, description]) => (
           <div key={number} className="feature-note">

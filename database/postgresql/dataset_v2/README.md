@@ -27,9 +27,11 @@ Một ảnh hiện được nhập thành một mẫu. Nếu sau này một mẫ
 
 35 ảnh thuộc 5 loại: áo bà ba (8), áo dài (7), áo giao lĩnh (5), áo ngũ thân tay chẽn (7), áo yếm (8). Tất cả ở nhánh Nu. Xem `import-report.json` để biết kết quả lần tạo file gần nhất.
 
-**Chỉ lưu một bộ ảnh tại `public/images/dataset/`.** Thư mục `dataset/` ở gốc dự án đã được bỏ vì trùng nội dung. Ví dụ file `public/images/dataset/Nu/aobaba/BB_do.jpg` có URL `/images/dataset/Nu/aobaba/BB_do.jpg`.
+**Chỉ lưu một bộ ảnh tại `public/images/dataset/`.** Thư mục `dataset/` ở gốc dự án đã được bỏ vì trùng nội dung. Ví dụ file `public/images/dataset/aobaba/BB_do.jpg` có URL `/images/dataset/aobaba/BB_do.jpg`. Dataset không còn cấp thư mục theo giới tính.
 
-Cột `dataset_path` giữ giá trị `dataset/Nu/aobaba/BB_do.jpg` như một khóa nhập logic để tương thích dữ liệu cũ, không phải đường dẫn file tính từ gốc repository. Script vẫn dùng khóa này để tránh nhập trùng. Không cần chạy migration hoặc nhập lại database sau khi bỏ bộ ảnh trùng; image_url không đổi.
+Cột `dataset_path` giữ giá trị `dataset/aobaba/BB_do.jpg` như một khóa nhập logic, không phải đường dẫn file tính từ gốc repository.
+
+**Lưu ý migration:** từ khi bỏ cấp thư mục `Nu/`, `dataset_path` đã đổi (`dataset/Nu/aobaba/BB_do.jpg` → `dataset/aobaba/BB_do.jpg`) và cột `audience` đã được bỏ khỏi schema. Database cũ sẽ sinh hàng trùng nếu nhập đè. Hãy tạo lại volume: `docker compose down -v && docker compose up -d --build`.
 
 Loại áo, nhóm và màu suy ra từ tên thư mục/file, chưa xác minh nội dung ảnh. Tên `xanh` giữ là “Xanh (chưa xác định sắc độ)”; không đoán thêm. Tất cả bản ghi nhập mới giữ `draft`. Không có khẳng định lịch sử hoặc nguồn ảnh được tự điền.
 

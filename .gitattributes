@@ -1,0 +1,18 @@
+# Chuẩn hoá xuống dòng: repo lưu LF, tránh diff nhiễu khi làm trên Windows.
+* text=auto eol=lf
+
+# Ảnh và file nhị phân: không được can thiệp.
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+
+# File phải giữ LF vì chạy trong container Linux.
+*.sh              text eol=lf
+Dockerfile        text eol=lf
+*.Dockerfile      text eol=lf
+
+# Lockfile: bỏ qua trong diff để review gọn.
+package-lock.json -diff linguist-generated

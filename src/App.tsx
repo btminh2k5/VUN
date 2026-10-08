@@ -57,17 +57,15 @@ export default function App() {
     () => findMatchingOutfits(selectedContext, selectedStyle, selectedColor),
     [selectedContext, selectedStyle, selectedColor]
   );
-  const matchedOutfits = React.useMemo(() => {
-    const localOutfits = matchResults.map((result) => result.outfit);
-    const candidates = apiOutfits ? [...apiOutfits, ...localOutfits] : localOutfits;
-    const seenCategories = new Set<string>();
-
-    return candidates.filter((outfit) => {
-      if (seenCategories.has(outfit.categoryName)) return false;
-      seenCategories.add(outfit.categoryName);
-      return true;
-    }).slice(0, 5);
-  }, [apiOutfits, matchResults]);
+  // Một nguồn dữ liệu duy nhất, không trộn. Engine đã dedupe theo tổ hợp item,
+  // đã áp quota đa dạng và đã sort theo điểm — frontend giữ nguyên thứ tự đó,
+  // không xếp hạng lại bằng tiêu chí khác. Fallback cục bộ chỉ dùng khi
+  // engine không trả được kết quả.
+  const usingFallbackData = apiOutfits === null;
+  const matchedOutfits = React.useMemo(
+    () => (apiOutfits ?? matchResults.map((result) => result.outfit).slice(0, 5)),
+    [apiOutfits, matchResults]
+  );
   const activeOutfit = detailOutfit || matchedOutfits[currentOutfitIndex] || matchedOutfits[0] || OUTFIT_SETS[0];
   const isCurrentOutfitSaved = savedOutfits.some((outfit) => outfit.id === activeOutfit.id);
 
@@ -223,6 +221,7 @@ export default function App() {
             onEditFilters={() => goToStep(1)}
             isLoading={isRecommending}
             error={recommendationError}
+            usingFallbackData={usingFallbackData}
           />
         )}
 
