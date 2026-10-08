@@ -1,0 +1,34 @@
+NGUỒN THAM KHẢO DỮ LIỆU TRANG PHỤC VIETFASHION
+Ngày tổng hợp: 08/10/2026
+
+1. Vietnam Tourism – Áo dài
+https://vietnam.travel/vi/things-to-do/all-about-ao-dai-vietnams-national-dress
+
+2. Sở Văn hóa Huế – Áo dài qua các thời kỳ
+https://svhttdl.hue.gov.vn/tin-trong-nuoc/ao-dai-viet-nam-qua-cac-thoi-ky-lich-su-mot-trien-lam-khong-the-bo-qua.html
+
+3. Sở Văn hóa Huế – Áo dài trong văn hóa Huế
+https://svhttdl.hue.gov.vn/tin-trong-tinh/ao-dai-trong-van-hoa-hue-tu-di-san-den-bieu-tuong-song-dong-cua-ban-sac.html
+
+4. VietnamPlus – Áo giao lĩnh
+https://www.vietnamplus.vn/video-ao-giao-linh-nguoc-dong-lich-su-cung-tinh-hoa-co-phuc-viet-post609553.vnp
+
+5. Báo Cần Thơ – Áo bà ba
+https://baocantho.com.vn/them-net-duyen-khi-dien-ao-ba-ba-a189137.html
+
+6. Báo Cần Thơ – Khăn rằn
+https://baocantho.com.vn/khan-ran-la-van-hoa-bieu-trung-cua-dat-va-nguoi-nam-bo-a179042.html
+
+7. VietnamPlus – Trang phục Quan họ
+https://mega.vietnamplus.vn/ve-xu-kinh-bac-nghe-cau-dan-ca-quan-ho-nghe-loi-hat-giao-duyen-5360.html
+
+8. Báo Cần Thơ – Nón lá
+https://baocantho.com.vn/non-la-mot-ky-hieu-cua-van-hoa-viet-a124177.html
+
+9. Báo Cần Thơ – Guốc mộc trong phối trang phục
+https://baocantho.com.vn/khong-gian-tet-xua-o-cac-diem-du-lich-a169490.html
+
+10. Báo Dân Việt – Áo yếm truyền thống
+https://danviet.vn/ao-yem-34di-san-trang-phuc34-cua-viet-nam-777760957-d211884.html
+
+Ghi chú: Mô tả màu và chi tiết của từng mẫu ảnh được đối chiếu trực tiếp từ ảnh trong dataset. Các trang trên dùng để tham khảo thông tin văn hóa; chúng không xác nhận nguồn gốc hoặc quyền sử dụng các ảnh trong dataset.

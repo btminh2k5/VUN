@@ -1,9 +1,8 @@
-> **Cập nhật cấu trúc:** `compose.yml` đã được thay bằng `compose.yml` ở gốc dự án,
+> **Cập nhật cấu trúc:** `docker-compose.yml` đã được thay bằng `compose.yml` ở gốc dự án,
 > và image database giờ build từ `database/Dockerfile` (multi-stage: stage `seed` chạy
 > `generate-import.mjs` sinh SQL từ thư mục ảnh, stage `runtime` là `postgres:18` chỉ nhận
 > các file `.sql`). Mặc định `docker compose up -d` chỉ chạy database; FastAPI bật bằng
-> `--profile api`. Các lệnh bên dưới dùng `compose.yml`, riêng phần nào còn nhắc
-> `compose.yml` thì hiểu là `compose.yml`.
+> `--profile api`. Các lệnh bên dưới dùng `compose.yml`.
 
 # Chạy database VietFashion bằng Docker
 
@@ -38,8 +37,9 @@ Lần đầu Docker tải image postgres:18, tạo database vietfashion, rồi c
 3. 04_update_type_information.sql: thông tin văn hóa có nguồn.
 4. 05_styling_items_schema.sql: bảng styling_items cho phụ kiện và giày dép.
 5. 06_import_styling_items.sql: 19 phụ kiện và 6 mẫu giày dép.
+6. 10_verified_item_metadata.sql: mô tả 35 ảnh áo, màu và mô tả 25 phụ kiện/giày dép; không đổi review_status.
 
-Compose ánh xạ trực tiếp các file hiện có vào /docker-entrypoint-initdb.d, không cần tạo bản sao schema.sql/seed.sql hoặc Dockerfile. File truy vấn 03 không được chạy tự động.
+database/Dockerfile chép các file SQL cần thiết vào /docker-entrypoint-initdb.d khi build image. File truy vấn 03 không được chạy tự động.
 
 Healthcheck kiểm tra PostgreSQL nhận kết nối; cần dùng câu lệnh dưới để xác nhận dữ liệu đã nhập đủ, không chỉ dựa vào trạng thái healthy.
 
@@ -111,9 +111,23 @@ docker compose exec postgres psql -U vietfashion -d vietfashion -v ON_ERROR_STOP
 
 Nếu lần khởi tạo gặp lỗi, đọc logs và sửa nguyên nhân trước. Khởi động lại không tự chạy tiếp các script trên volume đã khởi tạo dở; không xóa volume có dữ liệu cần giữ. Có thể kiểm tra/nạp phần còn thiếu bằng psql sau khi xác định lỗi.
 
+
+### Cập nhật database Docker đã tồn tại trước bản main mới
+
+Không xóa volume để cập nhật dữ liệu. File `12_upgrade_existing_db.sql` thêm các cột backend cần, chuyển 35 khóa/URL ảnh từ `dataset/Nu/` sang `dataset/`, rồi tạo lại view `wardrobe.outfit_catalog`. File `10_verified_item_metadata.sql` điền mô tả còn trống; không ghi đè nội dung đã nhập. Chạy từ gốc dự án:
+
+```powershell
+docker cp database/postgresql/dataset_v2/12_upgrade_existing_db.sql vietfashion-postgres-1:/tmp/12_upgrade_existing_db.sql
+docker exec vietfashion-postgres-1 psql -U vietfashion -d vietfashion -v ON_ERROR_STOP=1 -f /tmp/12_upgrade_existing_db.sql
+docker cp database/postgresql/dataset_v2/10_verified_item_metadata.sql vietfashion-postgres-1:/tmp/10_verified_item_metadata.sql
+docker exec vietfashion-postgres-1 psql -U vietfashion -d vietfashion -v ON_ERROR_STOP=1 -f /tmp/10_verified_item_metadata.sql
+```
+
+Chỉ chạy migration sau khi đã đối chiếu database hiện có. Hai file SQL chạy trong transaction; file 10 giữ nguyên ô đã có nội dung. `11_context_candidates.sql` chứa đề xuất phong cách và bối cảnh từ bản trước, không chạy tự động vì cần nhóm duyệt cùng `09_style_draft.sql`. URL nguồn để chia sẻ nằm trong `nguon-tham-khao.txt`, không được file 10 nhập vào database.
+
 ## 6. Bàn giao lên GitHub
 
-Giữ compose.yml, .env.example, database/ và public/images/dataset/. Chỉ có một bộ ảnh tại public/images/dataset; không cần thư mục dataset/ riêng ở gốc. Database chỉ lưu URL ảnh; PostgreSQL không phục vụ ảnh. Ảnh do ứng dụng web phục vụ từ public/images/dataset, không cần mount vào container database. Khóa dataset_path trong SQL giữ nguyên để tương thích dữ liệu đã nhập; không cần cập nhật database khi bỏ thư mục ảnh trùng.
+Giữ compose.yml, .env.example, database/ và public/images/dataset/. Chỉ có một bộ ảnh tại public/images/dataset; không cần thư mục dataset/ riêng ở gốc. Database chỉ lưu URL ảnh; PostgreSQL không phục vụ ảnh. Ảnh do ứng dụng web phục vụ từ public/images/dataset, không cần mount vào container database. Khóa dataset_path trong SQL mới không còn cấp `Nu/`; database cũ cần chạy `12_upgrade_existing_db.sql` để cập nhật khóa và URL ảnh mà vẫn giữ bản ghi.
 
 Đồng đội clone repository, tạo .env rồi chạy docker compose up -d sẽ khởi tạo cùng schema và dữ liệu từ SQL. Không commit .env, thư mục dữ liệu PostgreSQL hoặc volume Docker.
 

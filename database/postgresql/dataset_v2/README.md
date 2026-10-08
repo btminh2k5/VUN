@@ -11,7 +11,7 @@
 3. Refresh Schemas. Mở **wardrobe → Tables**: `garment_types` chứa loại áo; `garment_variants` chứa từng ảnh/màu. Nhấp phải bảng → View/Edit Data → All Rows.
 4. Muốn xem chung như bảng Excel: mở **wardrobe → Views → outfit_catalog**, hoặc chạy `SELECT * FROM wardrobe.outfit_catalog ORDER BY category, color;`.
 
-Bảng public.outfits trong database cũ, nếu có, không bị thay đổi; dữ liệu mới nằm trong wardrobe. Backend hiện chưa kết nối với các bảng mới.
+Bảng public.outfits trong database cũ, nếu có, không bị thay đổi; dữ liệu mới nằm trong wardrobe. Backend mới đọc các bảng trong schema `wardrobe`.
 
 ## Cách tổ chức
 
@@ -31,7 +31,7 @@ Một ảnh hiện được nhập thành một mẫu. Nếu sau này một mẫ
 
 Cột `dataset_path` giữ giá trị `dataset/aobaba/BB_do.jpg` như một khóa nhập logic, không phải đường dẫn file tính từ gốc repository.
 
-**Lưu ý migration:** từ khi bỏ cấp thư mục `Nu/`, `dataset_path` đã đổi (`dataset/Nu/aobaba/BB_do.jpg` → `dataset/aobaba/BB_do.jpg`) và cột `audience` đã được bỏ khỏi schema. Database cũ sẽ sinh hàng trùng nếu nhập đè. Hãy tạo lại volume: `docker compose down -v && docker compose up -d --build`.
+**Lưu ý migration:** từ khi bỏ cấp thư mục `Nu/`, `dataset_path` đã đổi (`dataset/Nu/aobaba/BB_do.jpg` → `dataset/aobaba/BB_do.jpg`). Với database cũ, chạy `12_upgrade_existing_db.sql` để giữ dữ liệu và tránh hàng trùng; không xóa volume. Xem hướng dẫn trong `database/DOCKER.md`.
 
 Loại áo, nhóm và màu suy ra từ tên thư mục/file, chưa xác minh nội dung ảnh. Tên `xanh` giữ là “Xanh (chưa xác định sắc độ)”; không đoán thêm. Tất cả bản ghi nhập mới giữ `draft`. Không có khẳng định lịch sử hoặc nguồn ảnh được tự điền.
 
@@ -42,6 +42,13 @@ Loại áo, nhóm và màu suy ra từ tên thư mục/file, chưa xác minh n�
 Trong garment_types: kiểm tra nhãn loại rồi điền mô tả, nguồn gốc, ý nghĩa, nguồn tài liệu, vùng/sự kiện/phong cách phù hợp. Trong garment_variants: đối chiếu ảnh/màu, điền nguồn ảnh và quyền sử dụng; bổ sung phụ kiện nếu có. ID và thời gian tự sinh.
 
 Chỉ đánh dấu reviewed sau khi nhóm kiểm chứng. Database kiểm tra giá trị trạng thái hợp lệ nhưng không tự xác minh nội dung, độ đầy đủ hoặc quyền sử dụng. Truy vấn website trong file 03 yêu cầu cả loại và mẫu đã reviewed nên ban đầu sẽ trả về rỗng.
+
+
+## Bổ sung metadata còn trống
+
+`10_verified_item_metadata.sql` bổ sung mô tả cho 35 ảnh áo và màu/mô tả cho 25 phụ kiện, giày dép. Docker chạy file này khi tạo database mới. Với database đã tồn tại, xem hướng dẫn chạy thủ công trong `database/DOCKER.md`. File không tự đánh dấu `reviewed`, không suy đoán chất liệu hay quyền sử dụng ảnh. Các link tham khảo để chia sẻ và đánh giá nằm trong `nguon-tham-khao.txt`, không được chép vào bản ghi bởi file này.
+
+`11_context_candidates.sql` lưu đề xuất phong cách và dịp phối đồ từ bản trước; không tự chạy. Nhóm cần đối chiếu với `09_style_draft.sql` trước khi dùng các nhãn này để chấm điểm.
 
 ## Khi thêm ảnh, màu hoặc loại mới
 

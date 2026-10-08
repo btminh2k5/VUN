@@ -45,6 +45,9 @@ COPY --from=seed /build/database/postgresql/dataset_v2/05_styling_items_schema.s
 COPY --from=seed /build/database/postgresql/dataset_v2/06_import_styling_items.sql \
      /docker-entrypoint-initdb.d/05_import_styling_items.sql
 
+COPY --from=seed /build/database/postgresql/dataset_v2/10_verified_item_metadata.sql \
+     /docker-entrypoint-initdb.d/06_verified_item_metadata.sql
+
 EXPOSE 5432
 
 HEALTHCHECK --interval=5s --timeout=5s --retries=12 --start-period=20s \
