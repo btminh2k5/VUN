@@ -1,12 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Bookmark, Check, ExternalLink, Palette } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Bookmark, Check, ExternalLink, Palette, RotateCw, Sparkles } from 'lucide-react';
 import { GarmentItem, OutfitSet } from '../data/vietFashionData';
-import { MatchResult } from '../utils/matchingEngine';
-import { OutfitMockup2D } from './OutfitMockup2D';
+import { MockupLayer, OutfitMockup2D } from './OutfitMockup2D';
+import { fetchOutfitAdvice, OutfitAdvice } from '../services/adviceApi';
+
+// TẮT phần tư vấn AI: mỗi lần bấm là một lần gọi API trả phí.
+// Bật lại bằng cách đổi cờ này thành true (backend /advice vẫn sẵn sàng,
+// và vẫn tự trả tư vấn theo luật nếu LLM_PROVIDER=none).
+const ENABLE_AI_ADVICE = false;
 
 interface Step4CompleteOutfitProps {
   outfit: OutfitSet;
-  matchResult?: MatchResult;
+  // Tiêu chí người dùng thực sự nhập ở Step 1 — chính xác hơn là đọc lại từ
+  // outfit, vì outfit fallback cục bộ mang bối cảnh riêng của nó.
   userQuery?: { context: string; style: string; color: string };
   onSaveOutfit: (outfit: OutfitSet) => void;
   isSaved: boolean;
@@ -48,6 +54,7 @@ const FALLBACK_ACCESSORIES: AccessoryOption[] = [
 
 export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   outfit,
+  userQuery,
   onSaveOutfit,
   isSaved,
   onOpenDataset,
@@ -56,6 +63,9 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   const mainGarment = outfit.items.find((item) => item.category === 'main');
   const recommendation = outfit.recommendation;
   const [selectedAccessoryIds, setSelectedAccessoryIds] = useState<string[]>([]);
+  const [advice, setAdvice] = useState<OutfitAdvice | null>(null);
+  const [adviceLoading, setAdviceLoading] = useState(false);
+  const [adviceError, setAdviceError] = useState('');
   const accessoryOptions = useMemo<AccessoryOption[]>(() => {
     const recommended = outfit.items.filter((item) => item.category !== 'main' && item.category !== 'pants');
     const merged = [...recommended, ...FALLBACK_ACCESSORIES];
@@ -64,14 +74,14 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
   const selectedAccessories = accessoryOptions.filter((item) => selectedAccessoryIds.includes(item.id));
   const referenceLines = mainGarment
     ? [
-        mainGarment.verifiedSource.museum,
-        mainGarment.verifiedSource.citation,
+        mainGarment.verifiedSource?.museum,
+        mainGarment.verifiedSource?.citation,
         ...(outfit.culturalSources || []).map((source) => source.title),
       ]
         .map((value) => value?.trim())
         .filter((value, index, values): value is string => Boolean(value) && values.findIndex((candidate) => candidate?.toLocaleLowerCase() === value?.toLocaleLowerCase()) === index)
     : [];
-  const referenceUrl = (outfit.culturalSources || []).find((source) => source.url)?.url || mainGarment?.verifiedSource.documentUrl;
+  const referenceUrl = (outfit.culturalSources || []).find((source) => source.url)?.url || mainGarment?.verifiedSource?.documentUrl;
   const hasReferenceUrl = Boolean(referenceUrl && referenceUrl !== '#' && /^https?:\/\//i.test(referenceUrl));
 
   const toggleAccessory = (option: AccessoryOption) => {
@@ -86,6 +96,57 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
         option.id,
       ];
     });
+  };
+
+  // z-index gốc do engine trả về trong mockup_2d; chỉ khi thiếu mới dùng mặc định theo vai trò.
+  const engineLayers = outfit.mockup2D?.layers ?? [];
+  const roleFallbackZ: Record<MockupLayer['role'], number> = { garment: 10, accessories: 20, footwear: 30 };
+  const mockupLayers = useMemo<MockupLayer[]>(() => {
+    const byId = new Map(engineLayers.map((layer) => [layer.itemId, layer]));
+    const nameById = new Map(outfit.items.map((item) => [item.id, item.name]));
+
+    const garmentLayer = engineLayers.find((layer) => layer.role === 'garment');
+    const base: MockupLayer[] = garmentLayer
+      ? [{ ...garmentLayer, name: nameById.get(garmentLayer.itemId) || mainGarment?.name }]
+      : mainGarment
+        ? [{ itemId: mainGarment.id, role: 'garment', imageUrl: mainGarment.imageUrl, zIndex: roleFallbackZ.garment, name: mainGarment.name }]
+        : [];
+
+    // Chưa chọn gì -> hiển thị đúng bộ layer engine gợi ý.
+    const source = selectedAccessories.length
+      ? selectedAccessories.map((option) => {
+          const role: MockupLayer['role'] = selectionGroup(option) === 'footwear' ? 'footwear' : 'accessories';
+          const fromEngine = byId.get(option.id);
+          return {
+            itemId: option.id,
+            role,
+            imageUrl: option.imageUrl,
+            zIndex: fromEngine?.zIndex ?? roleFallbackZ[role],
+            name: option.name,
+          };
+        })
+      : engineLayers
+          .filter((layer) => layer.role !== 'garment')
+          .map((layer) => ({ ...layer, name: nameById.get(layer.itemId) }));
+
+    return [...base, ...source];
+  }, [engineLayers, outfit.items, mainGarment, selectedAccessories]);
+
+  const requestAdvice = async () => {
+    setAdviceLoading(true);
+    setAdviceError('');
+    try {
+      setAdvice(await fetchOutfitAdvice(
+        userQuery?.context ?? outfit.context,
+        userQuery?.style ?? outfit.style,
+        userQuery?.color ?? outfit.primaryColor,
+        outfit.id,
+      ));
+    } catch (error: any) {
+      setAdviceError(error?.message || 'Không lấy được tư vấn phối đồ.');
+    } finally {
+      setAdviceLoading(false);
+    }
   };
 
   const accessoryTemplate = mainGarment || outfit.items[0];
@@ -192,11 +253,9 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
         </div>
       </section>
 
-      {selectedAccessories.length > 0 && (
+      {mockupLayers.length > 1 && (
         <OutfitMockup2D
-          garmentName={mainGarment?.name || outfit.title}
-          garmentImage={mainGarment?.imageUrl || outfit.modelImage}
-          accessories={selectedAccessories}
+          layers={mockupLayers}
           background={outfit.mockup2D?.background}
           width={outfit.mockup2D?.width}
           height={outfit.mockup2D?.height}
@@ -217,7 +276,7 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
               ['Khu vực', mainGarment?.region],
               ['Thời kỳ', mainGarment?.era],
               ['Chất liệu', mainGarment?.material],
-              ['Bối cảnh phù hợp', mainGarment?.suitableContexts.join(', ') || outfit.context],
+              ['Bối cảnh phù hợp', mainGarment?.suitableContexts?.length ? mainGarment.suitableContexts.join(', ') : ''],
               ['Phong cách', outfit.style],
               ['Đặc điểm', mainGarment?.keyFeatures],
             ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
@@ -263,6 +322,33 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
         <section className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-stone-500">Vì sao đây là gợi ý phù hợp</p>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-stone-600">{recommendation.explanation}</p>
+
+          {/* Điểm từng tiêu chí. Tiêu chí thiếu dữ liệu hiện "chưa có dữ liệu",
+              không hiện một con số trông như kết luận có căn cứ. */}
+          <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {([
+              ['Màu sắc', recommendation.scoreBreakdown.color],
+              ['Phong cách', recommendation.scoreBreakdown.style],
+              ['Bối cảnh', recommendation.scoreBreakdown.occasion],
+              ['Văn hoá', recommendation.scoreBreakdown.cultural],
+            ] as Array<[string, number | null]>).map(([label, value]) => (
+              <div key={label} className={`rounded-2xl border p-3 ${value === null ? 'border-dashed border-stone-300 bg-stone-50' : 'border-stone-200 bg-white'}`}>
+                <dt className="text-[10px] font-bold uppercase tracking-wide text-stone-500">{label}</dt>
+                <dd className={`mt-1 font-extrabold ${value === null ? 'text-xs text-stone-400' : 'text-lg text-stone-900'}`}>
+                  {value === null ? 'Chưa có dữ liệu' : `${value}/10`}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {recommendation.scoreBasis && recommendation.scoreBasis.dimensionsMissing.length > 0 && (
+            <p className="mt-4 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-xs leading-relaxed text-stone-600">
+              Điểm tổng <strong>{recommendation.score}/10</strong> được tính trên{' '}
+              <strong>{recommendation.scoreBasis.dimensionsUsed.length}/4 tiêu chí</strong>. Database chưa có dữ liệu{' '}
+              {recommendation.scoreBasis.missingLabels.join(', ')}, nên trọng số của tiêu chí đó đã được chia lại cho
+              các tiêu chí còn lại thay vì cho một điểm trung bình.
+            </p>
+          )}
           {recommendation.warnings.length > 0 && (
             <div className="mt-5 space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900">
               {recommendation.warnings.map((warning) => (
@@ -273,6 +359,75 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
         </section>
       )}
 
+      {ENABLE_AI_ADVICE && (
+      <section className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-stone-500">Tư vấn phối đồ</p>
+            <p className="mt-2 max-w-xl text-xs leading-relaxed text-stone-500">
+              Phần này do AI viết, nhưng bị ràng buộc theo đúng outfit và điểm số mà engine đã chấm —
+              AI không được đổi món, không được tự cho điểm.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={requestAdvice}
+            disabled={adviceLoading}
+            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-stone-700 disabled:opacity-60"
+          >
+            {adviceLoading ? <RotateCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {advice ? 'Tư vấn lại' : 'Xin tư vấn phối đồ'}
+          </button>
+        </div>
+
+        {adviceError && (
+          <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">{adviceError}</p>
+        )}
+
+        {advice && (
+          <div className="mt-5 space-y-4">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold">
+              <span className="rounded-full bg-stone-100 px-3 py-1.5 text-stone-600">
+                Nguồn: {advice.adviceSource === 'rule_engine' ? 'Tư vấn theo luật' : advice.adviceSource}
+                {advice.model ? ` · ${advice.model}` : ''}
+              </span>
+              <span className="rounded-full bg-stone-100 px-3 py-1.5 text-stone-600">Điểm engine: {advice.engineScore}/10</span>
+              <span className="rounded-full bg-stone-100 px-3 py-1.5 text-stone-600">Văn hoá: {advice.culturalCheck.score}/100</span>
+            </div>
+
+            {advice.llmError && (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900">
+                <strong>LLM chưa dùng được, đang hiển thị tư vấn theo luật.</strong> {advice.llmError}
+              </p>
+            )}
+
+            <p className="text-sm leading-relaxed text-stone-700">{advice.genZConcept}</p>
+
+            <ul className="space-y-2 text-sm leading-relaxed text-stone-600">
+              {advice.stylingTips.map((tip) => (
+                <li key={tip} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#a83d23]" />{tip}</li>
+              ))}
+            </ul>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 rounded-2xl bg-stone-50 p-4">
+                <h4 className="text-xs font-bold text-stone-900">Ý nghĩa văn hoá</h4>
+                <p className="text-xs leading-relaxed text-stone-600">{advice.culturalSignificance}</p>
+                <h4 className="pt-2 text-xs font-bold text-stone-900">Hoà hợp màu sắc</h4>
+                <p className="text-xs leading-relaxed text-stone-600">{advice.colorHarmonyNote}</p>
+              </div>
+              <div className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                <h4 className="text-xs font-bold text-stone-900">Giữ đúng tinh thần trang phục</h4>
+                <p className="text-xs leading-relaxed text-stone-700">{advice.culturalCheck.culturalRespectTips}</p>
+                <h4 className="pt-2 text-xs font-bold text-stone-900">Cần tránh</h4>
+                <p className="text-xs leading-relaxed text-stone-700">{advice.culturalCheck.cautions}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+      )}
+
       {mainGarment && (
         <section className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
           <div className="grid gap-6 md:grid-cols-2">
@@ -280,8 +435,8 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
               <h3 className="text-sm font-bold text-stone-900">Cách mặc & phối trang phục</h3>
               <p className="text-sm leading-relaxed text-stone-600">{mainGarment.genZStylingNote}</p>
               <ul className="space-y-2 text-xs leading-relaxed text-stone-600">
-                {mainGarment.culturalDoAndDont.dos.map((note) => <li key={note}><span className="font-bold text-stone-800">Nên: </span>{note}</li>)}
-                {mainGarment.culturalDoAndDont.donts.map((note) => <li key={note}><span className="font-bold text-stone-800">Lưu ý: </span>{note}</li>)}
+                {(mainGarment.culturalDoAndDont?.dos ?? []).map((note) => <li key={note}><span className="font-bold text-stone-800">Nên: </span>{note}</li>)}
+                {(mainGarment.culturalDoAndDont?.donts ?? []).map((note) => <li key={note}><span className="font-bold text-stone-800">Lưu ý: </span>{note}</li>)}
               </ul>
             </div>
             <div className="space-y-3 rounded-2xl bg-stone-50 p-4">

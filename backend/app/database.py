@@ -39,6 +39,7 @@ class WardrobeRepository:
             garments = await connection.fetch(
                 """
                 SELECT id, category, name, color, image_url, region, occasion, style,
+                       era, material, do_notes, dont_notes,
                        variant_description AS description, cultural_meaning,
                        cultural_notes, source, type_review_status, image_review_status
                 FROM wardrobe.outfit_catalog

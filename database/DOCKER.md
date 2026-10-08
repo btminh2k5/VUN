@@ -1,3 +1,10 @@
+> **Cập nhật cấu trúc:** `compose.yml` đã được thay bằng `compose.yml` ở gốc dự án,
+> và image database giờ build từ `database/Dockerfile` (multi-stage: stage `seed` chạy
+> `generate-import.mjs` sinh SQL từ thư mục ảnh, stage `runtime` là `postgres:18` chỉ nhận
+> các file `.sql`). Mặc định `docker compose up -d` chỉ chạy database; FastAPI bật bằng
+> `--profile api`. Các lệnh bên dưới dùng `compose.yml`, riêng phần nào còn nhắc
+> `compose.yml` thì hiểu là `compose.yml`.
+
 # Chạy database VietFashion bằng Docker
 
 Cần Docker Desktop đang chạy với Linux containers và Docker Compose v2. Chạy lệnh từ thư mục gốc repository (D:\VUN trên máy hiện tại).
@@ -106,7 +113,7 @@ Nếu lần khởi tạo gặp lỗi, đọc logs và sửa nguyên nhân trư�
 
 ## 6. Bàn giao lên GitHub
 
-Giữ docker-compose.yml, .env.example, database/ và public/images/dataset/. Chỉ có một bộ ảnh tại public/images/dataset; không cần thư mục dataset/ riêng ở gốc. Database chỉ lưu URL ảnh; PostgreSQL không phục vụ ảnh. Ảnh do ứng dụng web phục vụ từ public/images/dataset, không cần mount vào container database. Khóa dataset_path trong SQL giữ nguyên để tương thích dữ liệu đã nhập; không cần cập nhật database khi bỏ thư mục ảnh trùng.
+Giữ compose.yml, .env.example, database/ và public/images/dataset/. Chỉ có một bộ ảnh tại public/images/dataset; không cần thư mục dataset/ riêng ở gốc. Database chỉ lưu URL ảnh; PostgreSQL không phục vụ ảnh. Ảnh do ứng dụng web phục vụ từ public/images/dataset, không cần mount vào container database. Khóa dataset_path trong SQL giữ nguyên để tương thích dữ liệu đã nhập; không cần cập nhật database khi bỏ thư mục ảnh trùng.
 
 Đồng đội clone repository, tạo .env rồi chạy docker compose up -d sẽ khởi tạo cùng schema và dữ liệu từ SQL. Không commit .env, thư mục dữ liệu PostgreSQL hoặc volume Docker.
 

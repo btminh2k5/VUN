@@ -48,7 +48,7 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
   }>({
     connected: false,
     config: { host: '127.0.0.1', port: 5433, database: 'vietfashion', user: 'vietfashion' },
-    catalogCount: 35
+    catalogCount: REAL_DATASET_35_ITEMS.length
   });
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
             setDbStatus({
               connected: data.connected,
               config: data.config,
-              catalogCount: data.catalogCount || 35,
+              catalogCount: data.catalogCount || REAL_DATASET_35_ITEMS.length,
               message: data.message
             });
           }
@@ -70,7 +70,7 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
           setDbStatus({
             connected: false,
             config: { host: '127.0.0.1', port: 5433, database: 'vietfashion', user: 'vietfashion' },
-            catalogCount: 35
+            catalogCount: REAL_DATASET_35_ITEMS.length
           });
         });
     }
@@ -78,7 +78,7 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
 
   if (!isOpen) return null;
 
-  // Filter 35 real dataset items
+  const totalRealImages = REAL_DATASET_35_ITEMS.length;
   const filteredRealImages = REAL_DATASET_35_ITEMS.filter((item) => {
     const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
     const matchesSearch = 
@@ -89,13 +89,16 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
     return matchesCategory && matchesSearch;
   });
 
+  // Nhãn và số lượng đếm từ chính dữ liệu, nên thêm/bớt ảnh không cần sửa chỗ này.
   const categories = [
-    { key: 'all', label: 'Tất cả 35 ảnh', count: 35 },
-    { key: 'Áo bà ba', label: 'Áo bà ba', count: 8 },
-    { key: 'Áo dài', label: 'Áo dài', count: 7 },
-    { key: 'Áo giao lĩnh', label: 'Áo giao lĩnh', count: 5 },
-    { key: 'Áo ngũ thân tay chẽn', label: 'Áo ngũ thân tay chẽn', count: 7 },
-    { key: 'Áo yếm', label: 'Áo yếm', count: 8 }
+    { key: 'all', label: `Tất cả ${totalRealImages} ảnh`, count: totalRealImages },
+    ...[...new Set(REAL_DATASET_35_ITEMS.map((item) => item.category))]
+      .sort((a, b) => a.localeCompare(b, 'vi'))
+      .map((category) => ({
+        key: category,
+        label: category,
+        count: REAL_DATASET_35_ITEMS.filter((item) => item.category === category).length,
+      })),
   ];
 
   return (
@@ -118,11 +121,11 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
                     : 'bg-amber-100 text-amber-800 border border-amber-300'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${dbStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  {dbStatus.connected ? 'PostgreSQL 5433: Online' : '35 Ảnh Thật: Đã Tải'}
+                  {dbStatus.connected ? 'PostgreSQL 5433: Online' : `${totalRealImages} Ảnh Thật: Đã Tải`}
                 </span>
               </div>
               <p className="text-xs text-stone-500">
-                Kho lưu trữ 35 mẫu ảnh thật theo định chế văn hóa Việt phục (Schema: <code className="text-stone-700 bg-stone-200/60 px-1 py-0.5 rounded text-[11px]">wardrobe.outfit_catalog</code>)
+                Kho lưu trữ {totalRealImages} mẫu ảnh thật theo định chế văn hóa Việt phục (Schema: <code className="text-stone-700 bg-stone-200/60 px-1 py-0.5 rounded text-[11px]">wardrobe.outfit_catalog</code>)
               </p>
             </div>
           </div>
@@ -278,7 +281,6 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[11px] text-stone-500">
                           <span>Vùng: <strong className="text-stone-700">{record.region}</strong></span>
-                          <span>Đối tượng: <strong className="text-stone-700">{record.audience}</strong></span>
                         </div>
                         <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed">
                           {record.culturalMeaning}
@@ -388,7 +390,7 @@ export const VietFashionDatasetModal: React.FC<VietFashionDatasetModalProps> = (
                     Bảng `wardrobe.garment_variants`
                   </h4>
                   <p className="text-xs text-stone-600">
-                    Lưu trữ 35 bản ghi chi tiết ánh xạ trực tiếp tới các file ảnh thực tế tại <code className="bg-stone-200/80 px-1 py-0.5 rounded text-[11px]">/images/dataset/Nu/...</code>
+                    Lưu trữ {totalRealImages} bản ghi chi tiết ánh xạ trực tiếp tới các file ảnh thực tế tại <code className="bg-stone-200/80 px-1 py-0.5 rounded text-[11px]">/images/dataset/...</code>
                   </p>
                 </div>
               </div>

@@ -20,21 +20,22 @@ for (const file of walk(dataset).sort()) {
   const relative = path.relative(dataset, file).split(path.sep).join('/');
   if (!/\.(jpg|jpeg|png|webp)$/i.test(relative)) { ignored.push(relative); continue; }
   const parts = relative.split('/');
-  const [audienceCode, typeCode, filename] = parts;
-  if (audienceCode === 'accessories' || audienceCode === 'footwear') {
-    const category = stylingMaps[audienceCode]?.[typeCode];
+  // Phụ kiện và giày dép: <accessories|footwear>/<typeCode>/<file>
+  if (parts[0] === 'accessories' || parts[0] === 'footwear') {
+    const [itemGroup, typeCode] = parts;
+    const category = stylingMaps[itemGroup]?.[typeCode];
     if (parts.length !== 3 || !category) { issues.push(relative); continue; }
     // Current filenames carry no reliable color metadata. Leave color NULL.
-    stylingRecords.push({ relative, itemGroup: audienceCode, typeCode, category,
-      name: category });
+    stylingRecords.push({ relative, itemGroup, typeCode, category, name: category });
     continue;
   }
+  // Trang phục: <typeCode>/<file>. Dataset chỉ có trang phục nữ nên không còn cấp thư mục giới tính.
+  const [typeCode, filename] = parts;
   const colorCode = path.parse(filename ?? '').name.split('_').at(-1).toLowerCase();
-  if (parts.length !== 3 || !maps.audiences[audienceCode] || !maps.types[typeCode] || !maps.colors[colorCode]) {
+  if (parts.length !== 2 || !maps.types[typeCode] || !maps.colors[colorCode]) {
     issues.push(relative); continue;
   }
-  records.push({ relative, typeCode,
-    type: maps.types[typeCode], audience: maps.audiences[audienceCode], color: maps.colors[colorCode] });
+  records.push({ relative, typeCode, type: maps.types[typeCode], color: maps.colors[colorCode] });
 }
 // Validate everything before replacing generated SQL. Never copy or modify images.
 if (issues.length) throw new Error('No import generated. Fix mappings/layout:\n' + issues.join('\n'));
@@ -53,8 +54,8 @@ for (const r of records) {
   // Preserve dataset_path as a logical import key, not a repository file path.
   // Existing databases use this key; changing it would create duplicate rows.
   const url = '/images/dataset/' + r.relative.split('/').map(encodeURIComponent).join('/');
-  sql.push(`INSERT INTO wardrobe.garment_variants (garment_type_id, dataset_path, name, audience, color, image_url)
-SELECT id, ${quote('dataset/' + r.relative)}, ${quote(`${r.type} ${r.audience.toLowerCase()} màu ${r.color.toLowerCase()}`)}, ${quote(r.audience)}, ${quote(r.color)}, ${quote(url)}
+  sql.push(`INSERT INTO wardrobe.garment_variants (garment_type_id, dataset_path, name, color, image_url)
+SELECT id, ${quote('dataset/' + r.relative)}, ${quote(`${r.type} màu ${r.color.toLowerCase()}`)}, ${quote(r.color)}, ${quote(url)}
 FROM wardrobe.garment_types WHERE code = ${quote(r.typeCode)}
 ON CONFLICT (dataset_path) DO NOTHING;`);
 }

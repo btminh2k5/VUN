@@ -5,25 +5,29 @@ export interface GarmentItem {
   category: 'main' | 'pants' | 'accessory' | 'footwear' | 'headwear';
   imageUrl: string;
   galleryImages: string[];
-  region: string;
-  era: string;
-  suitableContexts: string[];
-  suitableStyles: string[];
-  keyFeatures: string;
-  culturalMeaning: string;
-  material: string;
-  verifiedSource: {
+  colorHex: string;
+  // Các field dưới đây là TUỲ CHỌN vì database có thể chưa có dữ liệu.
+  // Với món đồ đến từ PostgreSQL, thiếu thì để undefined và giao diện ẩn đi —
+  // tuyệt đối không lấp bằng giá trị của một outfit mẫu khác rồi hiển thị
+  // kèm nhãn "nguồn đã kiểm chứng".
+  region?: string;
+  era?: string;
+  suitableContexts?: string[];
+  suitableStyles?: string[];
+  keyFeatures?: string;
+  culturalMeaning?: string;
+  material?: string;
+  verifiedSource?: {
     name: string;
     documentUrl: string;
     citation: string;
     museum: string;
   };
-  genZStylingNote: string;
-  culturalDoAndDont: {
+  genZStylingNote?: string;
+  culturalDoAndDont?: {
     dos: string[];
     donts: string[];
   };
-  colorHex: string;
 }
 
 export interface OutfitSet {
@@ -76,15 +80,25 @@ export interface OutfitSet {
   genZTips: string[];
   recommendation?: {
     score: number;
+    // null = database chưa có dữ liệu cho tiêu chí đó.
     scoreBreakdown: {
-      color: number;
-      style: number;
-      occasion: number;
-      cultural: number;
+      color: number | null;
+      style: number | null;
+      occasion: number | null;
+      cultural: number | null;
     };
+    // Điểm được tính trên tiêu chí nào, với trọng số nào sau khi chia lại.
+    scoreBasis?: {
+      dimensionsUsed: string[];
+      dimensionsMissing: string[];
+      missingLabels: string[];
+      effectiveWeights: Record<string, number>;
+    };
+    reviewed?: boolean;
     explanation: string;
     warnings: string[];
-    explanationSource: 'gemini' | 'rule_engine';
+    // Engine phối đồ không dùng LLM — giải thích luôn từ rule engine.
+    explanationSource: 'rule_engine';
   };
 }
 
@@ -92,7 +106,6 @@ export interface DatasetVariantRecord {
   id: number;
   category: 'Áo bà ba' | 'Áo dài' | 'Áo giao lĩnh' | 'Áo ngũ thân tay chẽn' | 'Áo yếm';
   name: string;
-  audience: string;
   color: string;
   imageUrl: string;
   datasetPath: string;
@@ -103,49 +116,49 @@ export interface DatasetVariantRecord {
 // 35 Real items from PostgreSQL schema `wardrobe.outfit_catalog`
 export const REAL_DATASET_35_ITEMS: DatasetVariantRecord[] = [
   // Áo bà ba (8 ảnh)
-  { id: 1, category: 'Áo bà ba', name: 'Áo bà ba nữ màu cam', audience: 'Nữ', color: 'Cam', imageUrl: '/images/dataset/Nu/aobaba/BB_cam.jpg', datasetPath: 'dataset/Nu/aobaba/BB_cam.jpg', region: 'Nam Bộ', culturalMeaning: 'Nét duyên dáng, thuận tiện lao động của phụ nữ miền Tây sông nước.' },
-  { id: 2, category: 'Áo bà ba', name: 'Áo bà ba nữ màu đỏ', audience: 'Nữ', color: 'Đỏ', imageUrl: '/images/dataset/Nu/aobaba/BB_do.jpg', datasetPath: 'dataset/Nu/aobaba/BB_do.jpg', region: 'Nam Bộ', culturalMeaning: 'May mắn, hân hoan trong các dịp lễ tết và hội hè miệt vườn.' },
-  { id: 3, category: 'Áo bà ba', name: 'Áo bà ba nữ màu hồng', audience: 'Nữ', color: 'Hồng', imageUrl: '/images/dataset/Nu/aobaba/BB_hong.jpg', datasetPath: 'dataset/Nu/aobaba/BB_hong.jpg', region: 'Nam Bộ', culturalMeaning: 'Nét duyên e ấp, dịu dàng của thiếu nữ Đồng bằng sông Cửu Long.' },
-  { id: 4, category: 'Áo bà ba', name: 'Áo bà ba nữ màu nâu', audience: 'Nữ', color: 'Nâu', imageUrl: '/images/dataset/Nu/aobaba/BB_nau.jpg', datasetPath: 'dataset/Nu/aobaba/BB_nau.jpg', region: 'Nam Bộ', culturalMeaning: 'Màu nâu phù sa, biểu trưng cho đức tính cần cù, mộc mạc và chân chất.' },
-  { id: 5, category: 'Áo bà ba', name: 'Áo bà ba nữ màu tím', audience: 'Nữ', color: 'Tím', imageUrl: '/images/dataset/Nu/aobaba/BB_Tim.jpg', datasetPath: 'dataset/Nu/aobaba/BB_Tim.jpg', region: 'Nam Bộ', culturalMeaning: 'Tình cảm sắt son, chung thủy của người phụ nữ phương Nam.' },
-  { id: 6, category: 'Áo bà ba', name: 'Áo bà ba nữ màu trắng', audience: 'Nữ', color: 'Trắng', imageUrl: '/images/dataset/Nu/aobaba/BB_trang.jpg', datasetPath: 'dataset/Nu/aobaba/BB_trang.jpg', region: 'Nam Bộ', culturalMeaning: 'Thanh thuần, tươi trẻ, tôn lên làn da và phom dáng kín đáo.' },
-  { id: 7, category: 'Áo bà ba', name: 'Áo bà ba nữ màu xanh cốm', audience: 'Nữ', color: 'Xanh cốm', imageUrl: '/images/dataset/Nu/aobaba/BB_xanhcom.jpg', datasetPath: 'dataset/Nu/aobaba/BB_xanhcom.jpg', region: 'Nam Bộ', culturalMeaning: 'Sức sống của chồi non mạ biếc, mùa màng trù phú bờ kênh ngọn rạch.' },
-  { id: 8, category: 'Áo bà ba', name: 'Áo bà ba nữ màu xanh lam', audience: 'Nữ', color: 'Xanh lam', imageUrl: '/images/dataset/Nu/aobaba/BB_xanhlam.jpg', datasetPath: 'dataset/Nu/aobaba/BB_xanhlam.jpg', region: 'Nam Bộ', culturalMeaning: 'Nước lớn nước ròng hiền hòa nuôi dưỡng bao thế hệ miền sông nước.' },
+  { id: 1, category: 'Áo bà ba', name: 'Áo bà ba màu cam', color: 'Cam', imageUrl: '/images/dataset/aobaba/BB_cam.jpg', datasetPath: 'dataset/aobaba/BB_cam.jpg', region: 'Nam Bộ', culturalMeaning: 'Nét duyên dáng, thuận tiện lao động của phụ nữ miền Tây sông nước.' },
+  { id: 2, category: 'Áo bà ba', name: 'Áo bà ba màu đỏ', color: 'Đỏ', imageUrl: '/images/dataset/aobaba/BB_do.jpg', datasetPath: 'dataset/aobaba/BB_do.jpg', region: 'Nam Bộ', culturalMeaning: 'May mắn, hân hoan trong các dịp lễ tết và hội hè miệt vườn.' },
+  { id: 3, category: 'Áo bà ba', name: 'Áo bà ba màu hồng', color: 'Hồng', imageUrl: '/images/dataset/aobaba/BB_hong.jpg', datasetPath: 'dataset/aobaba/BB_hong.jpg', region: 'Nam Bộ', culturalMeaning: 'Nét duyên e ấp, dịu dàng của thiếu nữ Đồng bằng sông Cửu Long.' },
+  { id: 4, category: 'Áo bà ba', name: 'Áo bà ba màu nâu', color: 'Nâu', imageUrl: '/images/dataset/aobaba/BB_nau.jpg', datasetPath: 'dataset/aobaba/BB_nau.jpg', region: 'Nam Bộ', culturalMeaning: 'Màu nâu phù sa, biểu trưng cho đức tính cần cù, mộc mạc và chân chất.' },
+  { id: 5, category: 'Áo bà ba', name: 'Áo bà ba màu tím', color: 'Tím', imageUrl: '/images/dataset/aobaba/BB_Tim.jpg', datasetPath: 'dataset/aobaba/BB_Tim.jpg', region: 'Nam Bộ', culturalMeaning: 'Tình cảm sắt son, chung thủy của người phụ nữ phương Nam.' },
+  { id: 6, category: 'Áo bà ba', name: 'Áo bà ba màu trắng', color: 'Trắng', imageUrl: '/images/dataset/aobaba/BB_trang.jpg', datasetPath: 'dataset/aobaba/BB_trang.jpg', region: 'Nam Bộ', culturalMeaning: 'Thanh thuần, tươi trẻ, tôn lên làn da và phom dáng kín đáo.' },
+  { id: 7, category: 'Áo bà ba', name: 'Áo bà ba màu xanh cốm', color: 'Xanh cốm', imageUrl: '/images/dataset/aobaba/BB_xanhcom.jpg', datasetPath: 'dataset/aobaba/BB_xanhcom.jpg', region: 'Nam Bộ', culturalMeaning: 'Sức sống của chồi non mạ biếc, mùa màng trù phú bờ kênh ngọn rạch.' },
+  { id: 8, category: 'Áo bà ba', name: 'Áo bà ba màu xanh lam', color: 'Xanh lam', imageUrl: '/images/dataset/aobaba/BB_xanhlam.jpg', datasetPath: 'dataset/aobaba/BB_xanhlam.jpg', region: 'Nam Bộ', culturalMeaning: 'Nước lớn nước ròng hiền hòa nuôi dưỡng bao thế hệ miền sông nước.' },
 
   // Áo dài (7 ảnh)
-  { id: 9, category: 'Áo dài', name: 'Áo dài nữ màu cam', audience: 'Nữ', color: 'Cam', imageUrl: '/images/dataset/Nu/aodai/ad_cam.jpg', datasetPath: 'dataset/Nu/aodai/ad_cam.jpg', region: 'Việt Nam', culturalMeaning: 'Tươi tắn, năng động, đại diện cho tinh thần đón đầu đổi mới.' },
-  { id: 10, category: 'Áo dài', name: 'Áo dài nữ màu đỏ', audience: 'Nữ', color: 'Đỏ', imageUrl: '/images/dataset/Nu/aodai/ad_do.jpg', datasetPath: 'dataset/Nu/aodai/ad_do.jpg', region: 'Việt Nam', culturalMeaning: 'Biểu tượng may mắn, sum vầy và phúc lộc tròn đầy mùa xuân và ngày cưới.' },
-  { id: 11, category: 'Áo dài', name: 'Áo dài nữ màu hồng', audience: 'Nữ', color: 'Hồng', imageUrl: '/images/dataset/Nu/aodai/ad_hong.jpg', datasetPath: 'dataset/Nu/aodai/ad_hong.jpg', region: 'Việt Nam', culturalMeaning: 'Tình yêu đôi lứa trong sáng và sự nữ tính ngọt ngào.' },
-  { id: 12, category: 'Áo dài', name: 'Áo dài nữ màu tím', audience: 'Nữ', color: 'Tím', imageUrl: '/images/dataset/Nu/aodai/ad_tim.jpg', datasetPath: 'dataset/Nu/aodai/ad_tim.jpg', region: 'Việt Nam', culturalMeaning: 'Nét duyên dáng kín đáo, thâm trầm gắn liền với nữ sinh Đồng Khánh Huế.' },
-  { id: 13, category: 'Áo dài', name: 'Áo dài nữ màu vàng', audience: 'Nữ', color: 'Vàng', imageUrl: '/images/dataset/Nu/aodai/ad_vang.jpg', datasetPath: 'dataset/Nu/aodai/ad_vang.jpg', region: 'Việt Nam', culturalMeaning: 'Vinh hoa, phú quý, ánh mai vàng rực rỡ khởi sắc đầu năm.' },
-  { id: 14, category: 'Áo dài', name: 'Áo dài nữ màu xanh lam', audience: 'Nữ', color: 'Xanh lam', imageUrl: '/images/dataset/Nu/aodai/ad_xanhlam.jpg', datasetPath: 'dataset/Nu/aodai/ad_xanhlam.jpg', region: 'Việt Nam', culturalMeaning: 'Sự bình an, trí tuệ và nét đoan trang thanh nhã.' },
-  { id: 15, category: 'Áo dài', name: 'Áo dài nữ màu xanh lục', audience: 'Nữ', color: 'Xanh lục', imageUrl: '/images/dataset/Nu/aodai/ad_xanhluc.jpg', datasetPath: 'dataset/Nu/aodai/ad_xanhluc.jpg', region: 'Việt Nam', culturalMeaning: 'Sức sống thiên nhiên sinh sôi, quý phái như ngọc bích.' },
+  { id: 9, category: 'Áo dài', name: 'Áo dài màu cam', color: 'Cam', imageUrl: '/images/dataset/aodai/ad_cam.jpg', datasetPath: 'dataset/aodai/ad_cam.jpg', region: 'Việt Nam', culturalMeaning: 'Tươi tắn, năng động, đại diện cho tinh thần đón đầu đổi mới.' },
+  { id: 10, category: 'Áo dài', name: 'Áo dài màu đỏ', color: 'Đỏ', imageUrl: '/images/dataset/aodai/ad_do.jpg', datasetPath: 'dataset/aodai/ad_do.jpg', region: 'Việt Nam', culturalMeaning: 'Biểu tượng may mắn, sum vầy và phúc lộc tròn đầy mùa xuân và ngày cưới.' },
+  { id: 11, category: 'Áo dài', name: 'Áo dài màu hồng', color: 'Hồng', imageUrl: '/images/dataset/aodai/ad_hong.jpg', datasetPath: 'dataset/aodai/ad_hong.jpg', region: 'Việt Nam', culturalMeaning: 'Tình yêu đôi lứa trong sáng và sự nữ tính ngọt ngào.' },
+  { id: 12, category: 'Áo dài', name: 'Áo dài màu tím', color: 'Tím', imageUrl: '/images/dataset/aodai/ad_tim.jpg', datasetPath: 'dataset/aodai/ad_tim.jpg', region: 'Việt Nam', culturalMeaning: 'Nét duyên dáng kín đáo, thâm trầm gắn liền với nữ sinh Đồng Khánh Huế.' },
+  { id: 13, category: 'Áo dài', name: 'Áo dài màu vàng', color: 'Vàng', imageUrl: '/images/dataset/aodai/ad_vang.jpg', datasetPath: 'dataset/aodai/ad_vang.jpg', region: 'Việt Nam', culturalMeaning: 'Vinh hoa, phú quý, ánh mai vàng rực rỡ khởi sắc đầu năm.' },
+  { id: 14, category: 'Áo dài', name: 'Áo dài màu xanh lam', color: 'Xanh lam', imageUrl: '/images/dataset/aodai/ad_xanhlam.jpg', datasetPath: 'dataset/aodai/ad_xanhlam.jpg', region: 'Việt Nam', culturalMeaning: 'Sự bình an, trí tuệ và nét đoan trang thanh nhã.' },
+  { id: 15, category: 'Áo dài', name: 'Áo dài màu xanh lục', color: 'Xanh lục', imageUrl: '/images/dataset/aodai/ad_xanhluc.jpg', datasetPath: 'dataset/aodai/ad_xanhluc.jpg', region: 'Việt Nam', culturalMeaning: 'Sức sống thiên nhiên sinh sôi, quý phái như ngọc bích.' },
 
   // Áo giao lĩnh (5 ảnh)
-  { id: 16, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh nữ màu đỏ', audience: 'Nữ', color: 'Đỏ', imageUrl: '/images/dataset/Nu/aogiaolinh/agl_do.jpg', datasetPath: 'dataset/Nu/aogiaolinh/agl_do.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Cổ phục đan chéo trang nghiêm tôn vinh cội nguồn lịch sử ngàn năm.' },
-  { id: 17, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh nữ màu hồng', audience: 'Nữ', color: 'Hồng', imageUrl: '/images/dataset/Nu/aogiaolinh/agl_hong.jpg', datasetPath: 'dataset/Nu/aogiaolinh/agl_hong.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Nét thục nữ khuê các, mềm mại đài các của thiếu nữ thời xưa.' },
-  { id: 18, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh nữ màu tím', audience: 'Nữ', color: 'Tím', imageUrl: '/images/dataset/Nu/aogiaolinh/agl_tim.jpg', datasetPath: 'dataset/Nu/aogiaolinh/agl_tim.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Chiều sâu tri thức và nét trang nghiêm trong các nghi lễ cung đình.' },
-  { id: 19, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh nữ màu xanh lá', audience: 'Nữ', color: 'Xanh lá', imageUrl: '/images/dataset/Nu/aogiaolinh/agl_xanhla.jpg', datasetPath: 'dataset/Nu/aogiaolinh/agl_xanhla.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Sự hài hòa âm dương với cây cỏ hoa lá theo triết lý tự nhiên.' },
-  { id: 20, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh nữ màu xanh lam', audience: 'Nữ', color: 'Xanh lam', imageUrl: '/images/dataset/Nu/aogiaolinh/agl_xanhlam.jpg', datasetPath: 'dataset/Nu/aogiaolinh/agl_xanhlam.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Phong thái khoan thai, tĩnh tại và tâm hồn thanh khiết.' },
+  { id: 16, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh màu đỏ', color: 'Đỏ', imageUrl: '/images/dataset/aogiaolinh/agl_do.jpg', datasetPath: 'dataset/aogiaolinh/agl_do.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Cổ phục đan chéo trang nghiêm tôn vinh cội nguồn lịch sử ngàn năm.' },
+  { id: 17, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh màu hồng', color: 'Hồng', imageUrl: '/images/dataset/aogiaolinh/agl_hong.jpg', datasetPath: 'dataset/aogiaolinh/agl_hong.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Nét thục nữ khuê các, mềm mại đài các của thiếu nữ thời xưa.' },
+  { id: 18, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh màu tím', color: 'Tím', imageUrl: '/images/dataset/aogiaolinh/agl_tim.jpg', datasetPath: 'dataset/aogiaolinh/agl_tim.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Chiều sâu tri thức và nét trang nghiêm trong các nghi lễ cung đình.' },
+  { id: 19, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh màu xanh lá', color: 'Xanh lá', imageUrl: '/images/dataset/aogiaolinh/agl_xanhla.jpg', datasetPath: 'dataset/aogiaolinh/agl_xanhla.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Sự hài hòa âm dương với cây cỏ hoa lá theo triết lý tự nhiên.' },
+  { id: 20, category: 'Áo giao lĩnh', name: 'Áo giao lĩnh màu xanh lam', color: 'Xanh lam', imageUrl: '/images/dataset/aogiaolinh/agl_xanhlam.jpg', datasetPath: 'dataset/aogiaolinh/agl_xanhlam.jpg', region: 'Cổ phục Việt', culturalMeaning: 'Phong thái khoan thai, tĩnh tại và tâm hồn thanh khiết.' },
 
   // Áo ngũ thân tay chẽn (7 ảnh)
-  { id: 21, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn nữ màu be', audience: 'Nữ', color: 'Be', imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_be.jpg', datasetPath: 'dataset/Nu/aonguthan_taychen/ant_be.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Khuôn thước mực thước, 5 cúc tượng trưng ngũ thường (Nhân - Lễ - Nghĩa - Trí - Tín).' },
-  { id: 22, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn nữ màu đỏ', audience: 'Nữ', color: 'Đỏ', imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_do.jpg', datasetPath: 'dataset/Nu/aonguthan_taychen/ant_do.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Sự vinh hiển gia tộc, tứ thân phụ mẫu ôm bọc con cái trong đại lễ.' },
-  { id: 23, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn nữ màu hồng', audience: 'Nữ', color: 'Hồng', imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_hong.jpg', datasetPath: 'dataset/Nu/aonguthan_taychen/ant_hong.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Nho nhã, thanh tú, tôn vẻ đẹp kín đáo của thiếu nữ Việt cận đại.' },
-  { id: 24, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn nữ màu tím', audience: 'Nữ', color: 'Tím', imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_tim.jpg', datasetPath: 'dataset/Nu/aonguthan_taychen/ant_tim.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Di sản Cố đô, sự đoan trang thanh cao của người phụ nữ đất kinh kỳ.' },
-  { id: 25, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn nữ màu trắng', audience: 'Nữ', color: 'Trắng', imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_trang.jpg', datasetPath: 'dataset/Nu/aonguthan_taychen/ant_trang.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Sự trong sáng, tinh giản của phong cách tân cổ điển hiện đại.' },
-  { id: 26, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn nữ màu xanh lam', audience: 'Nữ', color: 'Xanh lam', imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_xanhlam.jpg', datasetPath: 'dataset/Nu/aonguthan_taychen/ant_xanhlam.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Khí chất điềm đạm, tao nhã và tri thức của tầng lớp trí thức xưa.' },
-  { id: 27, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn nữ màu xanh lục', audience: 'Nữ', color: 'Xanh lục', imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_xanhluc.jpg', datasetPath: 'dataset/Nu/aonguthan_taychen/ant_xanhluc.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Quyền quý, thâm nghiêm, biểu trưng cho sự trường tồn vĩnh cửu.' },
+  { id: 21, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn màu be', color: 'Be', imageUrl: '/images/dataset/aonguthan_taychen/ant_be.jpg', datasetPath: 'dataset/aonguthan_taychen/ant_be.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Khuôn thước mực thước, 5 cúc tượng trưng ngũ thường (Nhân - Lễ - Nghĩa - Trí - Tín).' },
+  { id: 22, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn màu đỏ', color: 'Đỏ', imageUrl: '/images/dataset/aonguthan_taychen/ant_do.jpg', datasetPath: 'dataset/aonguthan_taychen/ant_do.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Sự vinh hiển gia tộc, tứ thân phụ mẫu ôm bọc con cái trong đại lễ.' },
+  { id: 23, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn màu hồng', color: 'Hồng', imageUrl: '/images/dataset/aonguthan_taychen/ant_hong.jpg', datasetPath: 'dataset/aonguthan_taychen/ant_hong.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Nho nhã, thanh tú, tôn vẻ đẹp kín đáo của thiếu nữ Việt cận đại.' },
+  { id: 24, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn màu tím', color: 'Tím', imageUrl: '/images/dataset/aonguthan_taychen/ant_tim.jpg', datasetPath: 'dataset/aonguthan_taychen/ant_tim.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Di sản Cố đô, sự đoan trang thanh cao của người phụ nữ đất kinh kỳ.' },
+  { id: 25, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn màu trắng', color: 'Trắng', imageUrl: '/images/dataset/aonguthan_taychen/ant_trang.jpg', datasetPath: 'dataset/aonguthan_taychen/ant_trang.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Sự trong sáng, tinh giản của phong cách tân cổ điển hiện đại.' },
+  { id: 26, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn màu xanh lam', color: 'Xanh lam', imageUrl: '/images/dataset/aonguthan_taychen/ant_xanhlam.jpg', datasetPath: 'dataset/aonguthan_taychen/ant_xanhlam.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Khí chất điềm đạm, tao nhã và tri thức của tầng lớp trí thức xưa.' },
+  { id: 27, category: 'Áo ngũ thân tay chẽn', name: 'Áo ngũ thân tay chẽn màu xanh lục', color: 'Xanh lục', imageUrl: '/images/dataset/aonguthan_taychen/ant_xanhluc.jpg', datasetPath: 'dataset/aonguthan_taychen/ant_xanhluc.jpg', region: 'Huế & Toàn quốc', culturalMeaning: 'Quyền quý, thâm nghiêm, biểu trưng cho sự trường tồn vĩnh cửu.' },
 
   // Áo yếm (8 ảnh)
-  { id: 28, category: 'Áo yếm', name: 'Áo yếm nữ màu hồng', audience: 'Nữ', color: 'Hồng', imageUrl: '/images/dataset/Nu/aoyem/yem_hong.jpg', datasetPath: 'dataset/Nu/aoyem/yem_hong.jpg', region: 'Dân gian Việt', culturalMeaning: 'Dải yếm hoa đào gợi nhắc câu ca dao tình tứ của hội Lim Quan họ.' },
-  { id: 29, category: 'Áo yếm', name: 'Áo yếm nữ màu tím', audience: 'Nữ', color: 'Tím', imageUrl: '/images/dataset/Nu/aoyem/yem_tim.jpg', datasetPath: 'dataset/Nu/aoyem/yem_tim.jpg', region: 'Dân gian Việt', culturalMeaning: 'Nét kín đáo thầm kín, tế nhị và e ấp của người con gái.' },
-  { id: 30, category: 'Áo yếm', name: 'Áo yếm nữ màu trắng', audience: 'Nữ', color: 'Trắng', imageUrl: '/images/dataset/Nu/aoyem/yem_trang.jpg', datasetPath: 'dataset/Nu/aoyem/yem_trang.jpg', region: 'Dân gian Việt', culturalMeaning: 'Vẻ đẹp thanh bạch, trong ngần gắn với hoa sen hồ Tây.' },
-  { id: 31, category: 'Áo yếm', name: 'Áo yếm nữ màu vàng be', audience: 'Nữ', color: 'Vàng be', imageUrl: '/images/dataset/Nu/aoyem/yem_vangbe.jpg', datasetPath: 'dataset/Nu/aoyem/yem_vangbe.jpg', region: 'Dân gian Việt', culturalMeaning: 'Màu đũi tơ tằm dệt thủ công mộc mạc đậm tình quê hương.' },
-  { id: 32, category: 'Áo yếm', name: 'Áo yếm nữ màu vàng tươi', audience: 'Nữ', color: 'Vàng tươi', imageUrl: '/images/dataset/Nu/aoyem/yem_vangtuoi.jpg', datasetPath: 'dataset/Nu/aoyem/yem_vangtuoi.jpg', region: 'Dân gian Việt', culturalMeaning: 'Tươi tắn, rộn ràng trong nắng xuân hội làng truyền thống.' },
-  { id: 33, category: 'Áo yếm', name: 'Áo yếm nữ màu xanh', audience: 'Nữ', color: 'Xanh', imageUrl: '/images/dataset/Nu/aoyem/yem_xanh.jpg', datasetPath: 'dataset/Nu/aoyem/yem_xanh.jpg', region: 'Dân gian Việt', culturalMeaning: 'Sắc xanh đồng nội mộc mạc, gần gũi với thiên nhiên.' },
-  { id: 34, category: 'Áo yếm', name: 'Áo yếm nữ màu xanh lam', audience: 'Nữ', color: 'Xanh lam', imageUrl: '/images/dataset/Nu/aoyem/yem_xanhlam.jpg', datasetPath: 'dataset/Nu/aoyem/yem_xanhlam.jpg', region: 'Dân gian Việt', culturalMeaning: 'Dịu mát, thanh tao khi mặc lót trong áo tứ thân hoặc áo cánh.' },
-  { id: 35, category: 'Áo yếm', name: 'Áo yếm nữ màu xanh lục', audience: 'Nữ', color: 'Xanh lục', imageUrl: '/images/dataset/Nu/aoyem/yem_xanhluc.jpg', datasetPath: 'dataset/Nu/aoyem/yem_xanhluc.jpg', region: 'Dân gian Việt', culturalMeaning: 'Màu của lá sen, biểu trưng cho sự tươi trẻ và căng tràn nhựa sống.' }
+  { id: 28, category: 'Áo yếm', name: 'Áo yếm màu hồng', color: 'Hồng', imageUrl: '/images/dataset/aoyem/yem_hong.jpg', datasetPath: 'dataset/aoyem/yem_hong.jpg', region: 'Dân gian Việt', culturalMeaning: 'Dải yếm hoa đào gợi nhắc câu ca dao tình tứ của hội Lim Quan họ.' },
+  { id: 29, category: 'Áo yếm', name: 'Áo yếm màu tím', color: 'Tím', imageUrl: '/images/dataset/aoyem/yem_tim.jpg', datasetPath: 'dataset/aoyem/yem_tim.jpg', region: 'Dân gian Việt', culturalMeaning: 'Nét kín đáo thầm kín, tế nhị và e ấp của người con gái.' },
+  { id: 30, category: 'Áo yếm', name: 'Áo yếm màu trắng', color: 'Trắng', imageUrl: '/images/dataset/aoyem/yem_trang.jpg', datasetPath: 'dataset/aoyem/yem_trang.jpg', region: 'Dân gian Việt', culturalMeaning: 'Vẻ đẹp thanh bạch, trong ngần gắn với hoa sen hồ Tây.' },
+  { id: 31, category: 'Áo yếm', name: 'Áo yếm màu vàng be', color: 'Vàng be', imageUrl: '/images/dataset/aoyem/yem_vangbe.jpg', datasetPath: 'dataset/aoyem/yem_vangbe.jpg', region: 'Dân gian Việt', culturalMeaning: 'Màu đũi tơ tằm dệt thủ công mộc mạc đậm tình quê hương.' },
+  { id: 32, category: 'Áo yếm', name: 'Áo yếm màu vàng tươi', color: 'Vàng tươi', imageUrl: '/images/dataset/aoyem/yem_vangtuoi.jpg', datasetPath: 'dataset/aoyem/yem_vangtuoi.jpg', region: 'Dân gian Việt', culturalMeaning: 'Tươi tắn, rộn ràng trong nắng xuân hội làng truyền thống.' },
+  { id: 33, category: 'Áo yếm', name: 'Áo yếm màu xanh', color: 'Xanh', imageUrl: '/images/dataset/aoyem/yem_xanh.jpg', datasetPath: 'dataset/aoyem/yem_xanh.jpg', region: 'Dân gian Việt', culturalMeaning: 'Sắc xanh đồng nội mộc mạc, gần gũi với thiên nhiên.' },
+  { id: 34, category: 'Áo yếm', name: 'Áo yếm màu xanh lam', color: 'Xanh lam', imageUrl: '/images/dataset/aoyem/yem_xanhlam.jpg', datasetPath: 'dataset/aoyem/yem_xanhlam.jpg', region: 'Dân gian Việt', culturalMeaning: 'Dịu mát, thanh tao khi mặc lót trong áo tứ thân hoặc áo cánh.' },
+  { id: 35, category: 'Áo yếm', name: 'Áo yếm màu xanh lục', color: 'Xanh lục', imageUrl: '/images/dataset/aoyem/yem_xanhluc.jpg', datasetPath: 'dataset/aoyem/yem_xanhluc.jpg', region: 'Dân gian Việt', culturalMeaning: 'Màu của lá sen, biểu trưng cho sự tươi trẻ và căng tràn nhựa sống.' }
 ];
 
 export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
@@ -155,12 +168,12 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo dài đỏ may mắn',
     type: 'Áo dài',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aodai/ad_do.jpg',
+    imageUrl: '/images/dataset/aodai/ad_do.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aodai/ad_do.jpg',
-      '/images/dataset/Nu/aodai/ad_vang.jpg',
-      '/images/dataset/Nu/aodai/ad_hong.jpg',
-      '/images/dataset/Nu/aodai/ad_cam.jpg'
+      '/images/dataset/aodai/ad_do.jpg',
+      '/images/dataset/aodai/ad_vang.jpg',
+      '/images/dataset/aodai/ad_hong.jpg',
+      '/images/dataset/aodai/ad_cam.jpg'
     ],
     region: 'Toàn quốc',
     era: 'Tân thời (thập niên 1930 đến nay)',
@@ -187,11 +200,11 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo dài vàng hoàng yến',
     type: 'Áo dài',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aodai/ad_vang.jpg',
+    imageUrl: '/images/dataset/aodai/ad_vang.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aodai/ad_vang.jpg',
-      '/images/dataset/Nu/aodai/ad_do.jpg',
-      '/images/dataset/Nu/aodai/ad_cam.jpg'
+      '/images/dataset/aodai/ad_vang.jpg',
+      '/images/dataset/aodai/ad_do.jpg',
+      '/images/dataset/aodai/ad_cam.jpg'
     ],
     region: 'Toàn quốc',
     era: 'Tân thời',
@@ -218,10 +231,10 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo dài cam hoàng hôn',
     type: 'Áo dài',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aodai/ad_cam.jpg',
+    imageUrl: '/images/dataset/aodai/ad_cam.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aodai/ad_cam.jpg',
-      '/images/dataset/Nu/aodai/ad_do.jpg'
+      '/images/dataset/aodai/ad_cam.jpg',
+      '/images/dataset/aodai/ad_do.jpg'
     ],
     region: 'Việt Nam',
     era: 'Tân thời',
@@ -248,10 +261,10 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo dài hồng cánh sen',
     type: 'Áo dài',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aodai/ad_hong.jpg',
+    imageUrl: '/images/dataset/aodai/ad_hong.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aodai/ad_hong.jpg',
-      '/images/dataset/Nu/aodai/ad_tim.jpg'
+      '/images/dataset/aodai/ad_hong.jpg',
+      '/images/dataset/aodai/ad_tim.jpg'
     ],
     region: 'Việt Nam',
     era: 'Tân thời',
@@ -278,10 +291,10 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo dài tím mộng mơ',
     type: 'Áo dài',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aodai/ad_tim.jpg',
+    imageUrl: '/images/dataset/aodai/ad_tim.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aodai/ad_tim.jpg',
-      '/images/dataset/Nu/aodai/ad_do.jpg'
+      '/images/dataset/aodai/ad_tim.jpg',
+      '/images/dataset/aodai/ad_do.jpg'
     ],
     region: 'Huế & Toàn quốc',
     era: 'Tân thời',
@@ -308,10 +321,10 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo dài xanh lam ngọc',
     type: 'Áo dài',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aodai/ad_xanhlam.jpg',
+    imageUrl: '/images/dataset/aodai/ad_xanhlam.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aodai/ad_xanhlam.jpg',
-      '/images/dataset/Nu/aodai/ad_xanhluc.jpg'
+      '/images/dataset/aodai/ad_xanhlam.jpg',
+      '/images/dataset/aodai/ad_xanhluc.jpg'
     ],
     region: 'Toàn quốc',
     era: 'Tân thời',
@@ -338,10 +351,10 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo dài xanh lục bảo',
     type: 'Áo dài',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aodai/ad_xanhluc.jpg',
+    imageUrl: '/images/dataset/aodai/ad_xanhluc.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aodai/ad_xanhluc.jpg',
-      '/images/dataset/Nu/aodai/ad_xanhlam.jpg'
+      '/images/dataset/aodai/ad_xanhluc.jpg',
+      '/images/dataset/aodai/ad_xanhlam.jpg'
     ],
     region: 'Toàn quốc',
     era: 'Tân thời',
@@ -370,12 +383,12 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo ngũ thân tay chẽn lam ngọc',
     type: 'Áo ngũ thân',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_xanhlam.jpg',
+    imageUrl: '/images/dataset/aonguthan_taychen/ant_xanhlam.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aonguthan_taychen/ant_xanhlam.jpg',
-      '/images/dataset/Nu/aonguthan_taychen/ant_do.jpg',
-      '/images/dataset/Nu/aonguthan_taychen/ant_be.jpg',
-      '/images/dataset/Nu/aonguthan_taychen/ant_trang.jpg'
+      '/images/dataset/aonguthan_taychen/ant_xanhlam.jpg',
+      '/images/dataset/aonguthan_taychen/ant_do.jpg',
+      '/images/dataset/aonguthan_taychen/ant_be.jpg',
+      '/images/dataset/aonguthan_taychen/ant_trang.jpg'
     ],
     region: 'Cố đô Huế & Toàn quốc',
     era: 'Thời Nguyễn (Chúa Nguyễn Phúc Khoát 1744 & Vua Minh Mạng 1827)',
@@ -402,10 +415,10 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo ngũ thân tay chẽn đỏ',
     type: 'Áo ngũ thân',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_do.jpg',
+    imageUrl: '/images/dataset/aonguthan_taychen/ant_do.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aonguthan_taychen/ant_do.jpg',
-      '/images/dataset/Nu/aonguthan_taychen/ant_tim.jpg'
+      '/images/dataset/aonguthan_taychen/ant_do.jpg',
+      '/images/dataset/aonguthan_taychen/ant_tim.jpg'
     ],
     region: 'Huế & Toàn quốc',
     era: 'Thời Nguyễn',
@@ -432,10 +445,10 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
     name: 'Áo ngũ thân tay chẽn màu be',
     type: 'Áo ngũ thân',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aonguthan_taychen/ant_be.jpg',
+    imageUrl: '/images/dataset/aonguthan_taychen/ant_be.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aonguthan_taychen/ant_be.jpg',
-      '/images/dataset/Nu/aonguthan_taychen/ant_trang.jpg'
+      '/images/dataset/aonguthan_taychen/ant_be.jpg',
+      '/images/dataset/aonguthan_taychen/ant_trang.jpg'
     ],
     region: 'Huế & Toàn quốc',
     era: 'Thời Nguyễn',
@@ -461,15 +474,15 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
   // Áo bà ba
   'ao-ba-ba-cam': {
     id: 'ao-ba-ba-cam',
-    name: 'Áo bà ba nữ màu cam',
+    name: 'Áo bà ba màu cam',
     type: 'Áo bà ba',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aobaba/BB_cam.jpg',
+    imageUrl: '/images/dataset/aobaba/BB_cam.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aobaba/BB_cam.jpg',
-      '/images/dataset/Nu/aobaba/BB_do.jpg',
-      '/images/dataset/Nu/aobaba/BB_Tim.jpg',
-      '/images/dataset/Nu/aobaba/BB_xanhcom.jpg'
+      '/images/dataset/aobaba/BB_cam.jpg',
+      '/images/dataset/aobaba/BB_do.jpg',
+      '/images/dataset/aobaba/BB_Tim.jpg',
+      '/images/dataset/aobaba/BB_xanhcom.jpg'
     ],
     region: 'Nam Bộ',
     era: 'Truyền thống phương Nam',
@@ -493,13 +506,13 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
   },
   'ao-ba-ba-do': {
     id: 'ao-ba-ba-do',
-    name: 'Áo bà ba nữ màu đỏ',
+    name: 'Áo bà ba màu đỏ',
     type: 'Áo bà ba',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aobaba/BB_do.jpg',
+    imageUrl: '/images/dataset/aobaba/BB_do.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aobaba/BB_do.jpg',
-      '/images/dataset/Nu/aobaba/BB_hong.jpg'
+      '/images/dataset/aobaba/BB_do.jpg',
+      '/images/dataset/aobaba/BB_hong.jpg'
     ],
     region: 'Nam Bộ',
     era: 'Truyền thống phương Nam',
@@ -523,13 +536,13 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
   },
   'ao-ba-ba-xanh-com': {
     id: 'ao-ba-ba-xanh-com',
-    name: 'Áo bà ba nữ màu xanh cốm',
+    name: 'Áo bà ba màu xanh cốm',
     type: 'Áo bà ba',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aobaba/BB_xanhcom.jpg',
+    imageUrl: '/images/dataset/aobaba/BB_xanhcom.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aobaba/BB_xanhcom.jpg',
-      '/images/dataset/Nu/aobaba/BB_xanhlam.jpg'
+      '/images/dataset/aobaba/BB_xanhcom.jpg',
+      '/images/dataset/aobaba/BB_xanhlam.jpg'
     ],
     region: 'Nam Bộ',
     era: 'Truyền thống phương Nam',
@@ -555,14 +568,14 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
   // Áo giao lĩnh
   'ao-giao-linh-do': {
     id: 'ao-giao-linh-do',
-    name: 'Áo giao lĩnh nữ màu đỏ son',
+    name: 'Áo giao lĩnh màu đỏ son',
     type: 'Áo giao lĩnh',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aogiaolinh/agl_do.jpg',
+    imageUrl: '/images/dataset/aogiaolinh/agl_do.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aogiaolinh/agl_do.jpg',
-      '/images/dataset/Nu/aogiaolinh/agl_hong.jpg',
-      '/images/dataset/Nu/aogiaolinh/agl_tim.jpg'
+      '/images/dataset/aogiaolinh/agl_do.jpg',
+      '/images/dataset/aogiaolinh/agl_hong.jpg',
+      '/images/dataset/aogiaolinh/agl_tim.jpg'
     ],
     region: 'Cổ phục Việt Nam',
     era: 'Cổ phục thời Lý - Trần - Lê',
@@ -586,13 +599,13 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
   },
   'ao-giao-linh-xanh-la': {
     id: 'ao-giao-linh-xanh-la',
-    name: 'Áo giao lĩnh nữ màu xanh lá',
+    name: 'Áo giao lĩnh màu xanh lá',
     type: 'Áo giao lĩnh',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aogiaolinh/agl_xanhla.jpg',
+    imageUrl: '/images/dataset/aogiaolinh/agl_xanhla.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aogiaolinh/agl_xanhla.jpg',
-      '/images/dataset/Nu/aogiaolinh/agl_xanhlam.jpg'
+      '/images/dataset/aogiaolinh/agl_xanhla.jpg',
+      '/images/dataset/aogiaolinh/agl_xanhlam.jpg'
     ],
     region: 'Cổ phục Việt Nam',
     era: 'Cổ phục thời Lý - Trần - Lê',
@@ -618,14 +631,14 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
   // Áo yếm
   'ao-yem-hong': {
     id: 'ao-yem-hong',
-    name: 'Áo yếm nữ màu hồng cánh sen',
+    name: 'Áo yếm màu hồng cánh sen',
     type: 'Áo yếm',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aoyem/yem_hong.jpg',
+    imageUrl: '/images/dataset/aoyem/yem_hong.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aoyem/yem_hong.jpg',
-      '/images/dataset/Nu/aoyem/yem_trang.jpg',
-      '/images/dataset/Nu/aoyem/yem_vangtuoi.jpg'
+      '/images/dataset/aoyem/yem_hong.jpg',
+      '/images/dataset/aoyem/yem_trang.jpg',
+      '/images/dataset/aoyem/yem_vangtuoi.jpg'
     ],
     region: 'Dân gian Bắc Bộ',
     era: 'Truyền thống Kinh Bắc',
@@ -649,13 +662,13 @@ export const VIET_FASHION_ITEMS: Record<string, GarmentItem> = {
   },
   'ao-yem-trang': {
     id: 'ao-yem-trang',
-    name: 'Áo yếm nữ màu trắng đầm sen',
+    name: 'Áo yếm màu trắng đầm sen',
     type: 'Áo yếm',
     category: 'main',
-    imageUrl: '/images/dataset/Nu/aoyem/yem_trang.jpg',
+    imageUrl: '/images/dataset/aoyem/yem_trang.jpg',
     galleryImages: [
-      '/images/dataset/Nu/aoyem/yem_trang.jpg',
-      '/images/dataset/Nu/aoyem/yem_vangbe.jpg'
+      '/images/dataset/aoyem/yem_trang.jpg',
+      '/images/dataset/aoyem/yem_vangbe.jpg'
     ],
     region: 'Dân gian Bắc Bộ',
     era: 'Truyền thống',
@@ -692,7 +705,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Hiện đại',
     primaryColor: 'Đỏ',
     colorHex: '#C51E28',
-    modelImage: '/images/dataset/Nu/aodai/ad_do.jpg',
+    modelImage: '/images/dataset/aodai/ad_do.jpg',
     model3DConfig: {
       baseColor: '#C51E28',
       secondaryColor: '#FFFFFF',
@@ -731,7 +744,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Thanh lịch',
     primaryColor: 'Vàng',
     colorHex: '#CA8A04',
-    modelImage: '/images/dataset/Nu/aodai/ad_vang.jpg',
+    modelImage: '/images/dataset/aodai/ad_vang.jpg',
     model3DConfig: {
       baseColor: '#CA8A04',
       secondaryColor: '#FFFFFF',
@@ -762,7 +775,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
   // 3. Áo dài cam
   {
     id: 'set-aodai-cam',
-    title: 'Gợi ý: Áo dài nữ màu cam hoàng hôn',
+    title: 'Gợi ý: Áo dài màu cam hoàng hôn',
     subtitle: 'Tươi tắn · Trẻ trung · Hiện đại Gen Z',
     description: 'Áo dài lụa tơ tằm tông cam ấm áp, tôn làn da sáng và phong thái năng động, tự tin của người phụ nữ hiện đại.',
     categoryName: 'Áo dài',
@@ -770,7 +783,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Hiện đại',
     primaryColor: 'Cam',
     colorHex: '#EA580C',
-    modelImage: '/images/dataset/Nu/aodai/ad_cam.jpg',
+    modelImage: '/images/dataset/aodai/ad_cam.jpg',
     model3DConfig: {
       baseColor: '#EA580C',
       secondaryColor: '#FFFFFF',
@@ -806,7 +819,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Thanh lịch',
     primaryColor: 'Hồng',
     colorHex: '#DB2777',
-    modelImage: '/images/dataset/Nu/aodai/ad_hong.jpg',
+    modelImage: '/images/dataset/aodai/ad_hong.jpg',
     model3DConfig: {
       baseColor: '#DB2777',
       secondaryColor: '#FFFFFF',
@@ -842,7 +855,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Cổ điển',
     primaryColor: 'Tím',
     colorHex: '#7E22CE',
-    modelImage: '/images/dataset/Nu/aodai/ad_tim.jpg',
+    modelImage: '/images/dataset/aodai/ad_tim.jpg',
     model3DConfig: {
       baseColor: '#7E22CE',
       secondaryColor: '#FFFFFF',
@@ -878,7 +891,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Hiện đại',
     primaryColor: 'Xanh lam',
     colorHex: '#0D9488',
-    modelImage: '/images/dataset/Nu/aodai/ad_xanhlam.jpg',
+    modelImage: '/images/dataset/aodai/ad_xanhlam.jpg',
     model3DConfig: {
       baseColor: '#0D9488',
       secondaryColor: '#FFFFFF',
@@ -914,7 +927,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Cổ điển',
     primaryColor: 'Xanh cốm',
     colorHex: '#047857',
-    modelImage: '/images/dataset/Nu/aodai/ad_xanhluc.jpg',
+    modelImage: '/images/dataset/aodai/ad_xanhluc.jpg',
     model3DConfig: {
       baseColor: '#047857',
       secondaryColor: '#FFFFFF',
@@ -942,15 +955,15 @@ export const OUTFIT_SETS: OutfitSet[] = [
   // 8. Áo bà ba cam
   {
     id: 'set-aobaba-cam',
-    title: 'Gợi ý: Áo bà ba nữ màu cam tươi sáng',
+    title: 'Gợi ý: Áo bà ba màu cam tươi sáng',
     subtitle: 'Mộc mạc · Năng động · Đậm đà sông nước',
-    description: 'Chiếc áo bà ba nữ màu cam tươi sáng từ bộ sưu tập thực tế, tôn lên nét đẹp rạng ngời, tự nhiên của người phụ nữ phương Nam.',
+    description: 'Chiếc áo bà ba màu cam tươi sáng từ bộ sưu tập thực tế, tôn lên nét đẹp rạng ngời, tự nhiên của người phụ nữ phương Nam.',
     categoryName: 'Áo bà ba',
     context: 'Dạo phố',
     style: 'Hiện đại',
     primaryColor: 'Cam',
     colorHex: '#EA580C',
-    modelImage: '/images/dataset/Nu/aobaba/BB_cam.jpg',
+    modelImage: '/images/dataset/aobaba/BB_cam.jpg',
     model3DConfig: {
       baseColor: '#EA580C',
       secondaryColor: '#FFFFFF',
@@ -978,7 +991,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
   // 9. Áo bà ba đỏ
   {
     id: 'set-aobaba-do',
-    title: 'Gợi ý: Áo bà ba nữ màu đỏ may mắn',
+    title: 'Gợi ý: Áo bà ba màu đỏ may mắn',
     subtitle: 'Hân hoan · Rực rỡ · Hội xuân miệt vườn',
     description: 'Áo bà ba đỏ lụa mềm mại, cổ tròn xẻ ngực cài cúc tinh gọn, mang lại vượng khí và niềm vui cho các dịp hội hè.',
     categoryName: 'Áo bà ba',
@@ -986,7 +999,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Hiện đại',
     primaryColor: 'Đỏ',
     colorHex: '#C51E28',
-    modelImage: '/images/dataset/Nu/aobaba/BB_do.jpg',
+    modelImage: '/images/dataset/aobaba/BB_do.jpg',
     model3DConfig: {
       baseColor: '#C51E28',
       secondaryColor: '#FFFFFF',
@@ -1014,7 +1027,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
   // 10. Áo bà ba xanh cốm
   {
     id: 'set-aobaba-xanhcom',
-    title: 'Gợi ý: Áo bà ba nữ màu xanh cốm',
+    title: 'Gợi ý: Áo bà ba màu xanh cốm',
     subtitle: 'Tươi mát · Trẻ trung · Trù phú bờ kênh',
     description: 'Áo bà ba lụa màu xanh cốm non tươi tắn, biểu tượng cho sức sống thiên nhiên cây cỏ và mùa màng trù phú miền Tây.',
     categoryName: 'Áo bà ba',
@@ -1022,7 +1035,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Tối giản',
     primaryColor: 'Xanh cốm',
     colorHex: '#047857',
-    modelImage: '/images/dataset/Nu/aobaba/BB_xanhcom.jpg',
+    modelImage: '/images/dataset/aobaba/BB_xanhcom.jpg',
     model3DConfig: {
       baseColor: '#047857',
       secondaryColor: '#FFFFFF',
@@ -1058,7 +1071,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Tối giản',
     primaryColor: 'Xanh lam',
     colorHex: '#0D9488',
-    modelImage: '/images/dataset/Nu/aonguthan_taychen/ant_xanhlam.jpg',
+    modelImage: '/images/dataset/aonguthan_taychen/ant_xanhlam.jpg',
     model3DConfig: {
       baseColor: '#0D9488',
       secondaryColor: '#F8FAFC',
@@ -1094,7 +1107,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Cổ điển',
     primaryColor: 'Đỏ',
     colorHex: '#C51E28',
-    modelImage: '/images/dataset/Nu/aonguthan_taychen/ant_do.jpg',
+    modelImage: '/images/dataset/aonguthan_taychen/ant_do.jpg',
     model3DConfig: {
       baseColor: '#C51E28',
       secondaryColor: '#FFFFFF',
@@ -1130,7 +1143,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Tối giản',
     primaryColor: 'Be',
     colorHex: '#D6D3D1',
-    modelImage: '/images/dataset/Nu/aonguthan_taychen/ant_be.jpg',
+    modelImage: '/images/dataset/aonguthan_taychen/ant_be.jpg',
     model3DConfig: {
       baseColor: '#D6D3D1',
       secondaryColor: '#FFFFFF',
@@ -1166,7 +1179,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Cổ điển',
     primaryColor: 'Đỏ',
     colorHex: '#B91C1C',
-    modelImage: '/images/dataset/Nu/aogiaolinh/agl_do.jpg',
+    modelImage: '/images/dataset/aogiaolinh/agl_do.jpg',
     model3DConfig: {
       baseColor: '#B91C1C',
       secondaryColor: '#FFFFFF',
@@ -1194,7 +1207,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
   // 15. Áo giao lĩnh xanh lá
   {
     id: 'set-aogiaolinh-xanhla',
-    title: 'Gợi ý: Áo giao lĩnh nữ màu xanh lá',
+    title: 'Gợi ý: Áo giao lĩnh màu xanh lá',
     subtitle: 'Thanh cao · Mát lành · Hài hòa Trời đất',
     description: 'Áo giao lĩnh xanh lá tươi sáng, biểu hiện sự hòa hợp âm dương và phong thái thanh cao của mỹ nhân xưa.',
     categoryName: 'Áo giao lĩnh',
@@ -1202,7 +1215,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Cổ điển',
     primaryColor: 'Xanh cốm',
     colorHex: '#16A34A',
-    modelImage: '/images/dataset/Nu/aogiaolinh/agl_xanhla.jpg',
+    modelImage: '/images/dataset/aogiaolinh/agl_xanhla.jpg',
     model3DConfig: {
       baseColor: '#16A34A',
       secondaryColor: '#FFFFFF',
@@ -1238,7 +1251,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Phá cách Y2K',
     primaryColor: 'Hồng',
     colorHex: '#DB2777',
-    modelImage: '/images/dataset/Nu/aoyem/yem_hong.jpg',
+    modelImage: '/images/dataset/aoyem/yem_hong.jpg',
     model3DConfig: {
       baseColor: '#DB2777',
       secondaryColor: '#FFFFFF',
@@ -1274,7 +1287,7 @@ export const OUTFIT_SETS: OutfitSet[] = [
     style: 'Tối giản',
     primaryColor: 'Trắng',
     colorHex: '#F8FAFC',
-    modelImage: '/images/dataset/Nu/aoyem/yem_trang.jpg',
+    modelImage: '/images/dataset/aoyem/yem_trang.jpg',
     model3DConfig: {
       baseColor: '#F8FAFC',
       secondaryColor: '#E2E8F0',

@@ -1,6 +1,5 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -66,85 +65,43 @@ app.post('/api/recommendations', async (req, res) => {
   }
 });
 
-// API route for AI Styling Advice with Gemini
+// Browser-facing proxy to the FastAPI advice endpoint.
+// LLM chỉ được gọi ở đây, và FastAPI buộc nó tuân theo kết quả rule engine.
 app.post('/api/ai-styling', async (req, res) => {
+  const fastApiUrl = process.env.FASTAPI_URL || 'http://127.0.0.1:8000';
+  const { occasion, style, color, outfitId, limit } = req.body ?? {};
   try {
-    const { context, style, color, currentOutfit, question } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-      return res.json({
-        success: true,
-        source: 'vietfashion_knowledge_engine',
-        advice: `Gợi ý phối đồ cho bối cảnh ${context || 'Tết'}, phong cách ${style || 'Hiện đại'}, tông màu ${color || 'Đỏ'}:
-- Điểm nhấn Gen Z: Kết hợp phom dáng truyền thống tôn dáng với phụ kiện tối giản thanh lịch (như mini bag, guốc mộc quai trong hoặc giày Mary Jane).
-- Lưu ý văn hóa: Giữ nguyên độ dài tà áo chuẩn mực, tránh cắt ngắn quá mức hoặc mặc tà áo không kèm quần để tôn trọng giá trị di sản.
-- Hài hòa màu sắc: Tông màu rất hợp với bối cảnh, tạo năng lượng tươi trẻ nhưng vẫn đoan trang.`,
-        culturalCheck: {
-          status: 'verified',
-          score: 95,
-          culturalRespectTips: 'Bộ trang phục bảo đảm đúng tinh thần trang nghiêm, tà áo thướt tha, kết hợp phụ kiện hiện đại một cách tinh tế.',
-          cautions: 'Tuyệt đối không phối áo dài xẻ tà với quần sooc ngắn hoặc chân váy siêu ngắn khi tham gia các sự kiện văn hóa truyền thống.'
-        }
-      });
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-    const prompt = `Bạn là Chuyên gia Cố vấn Phong cách Việt Phục (VietFashion AI Stylist) kết hợp giữa nghiên cứu văn hóa truyền thống Việt Nam và phong cách thời trang Gen Z hiện đại.
-Người dùng đang quan tâm:
-- Bối cảnh: ${context || 'Lễ hội/Tết'}
-- Phong cách mong muốn: ${style || 'Hiện đại / Gen Z'}
-- Màu sắc chủ đạo: ${color || 'Đỏ'}
-- Outfit đang chọn: ${currentOutfit ? JSON.stringify(currentOutfit) : 'Áo dài / Áo ngũ thân'}
-- Câu hỏi thêm (nếu có): ${question || 'Hãy gợi ý cách phối trang phục vừa trẻ trung vừa tôn trọng văn hóa.'}
-
-Hãy phân tích và trả về định dạng JSON thuần túy (không bọc trong markdown codeblock nếu có thể, hoặc bọc trong \`\`\`json) với cấu trúc:
-{
-  "genZConcept": "Mô tả ngắn về ý tưởng phối đồ cho Gen Z",
-  "stylingTips": [
-    "Tip 1 về trang phục chính và phụ kiện",
-    "Tip 2 về cách chọn giày/tóc/makeup",
-    "Tip 3 về mẹo chụp ảnh hoặc dạo phố"
-  ],
-  "culturalSignificance": "Ý nghĩa lịch sử, cội nguồn văn hóa của trang phục này",
-  "culturalCheck": {
-    "status": "safe",
-    "score": 96,
-    "culturalRespectTips": "Lời khuyên gìn giữ bản sắc",
-    "cautions": "Cảnh báo những cách kết hợp sai lệch hoặc phản cảm cần tránh tuyệt đối"
-  },
-  "colorHarmonyNote": "Nhận xét về sự phối hợp màu sắc theo ngũ hành và gu thẩm mỹ Gen Z"
-}`;
-
-    const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      }
+    const response = await fetch(`${fastApiUrl}/advice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        occasion: occasion || 'Tết',
+        style: style || 'Hiện đại',
+        color: color || 'Đỏ',
+        limit: limit ?? 5,
+        outfit_id: outfitId ?? null,
+      }),
+      signal: AbortSignal.timeout(45_000),
     });
-
-    const text = response.text || '';
-    let parsedData;
-    try {
-      parsedData = JSON.parse(text);
-    } catch {
-      // Fallback regex clean
-      const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      parsedData = JSON.parse(cleaned);
-    }
-
-    return res.json({
-      success: true,
-      source: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-      ...parsedData
-    });
+    const payload = await response.json();
+    return res.status(response.status).json(payload);
   } catch (error: any) {
-    console.error('Error generating AI styling:', error);
-    return res.status(500).json({
+    return res.status(502).json({
       success: false,
-      error: error.message || 'Lỗi khi kết nối với AI Stylist'
+      error: 'FastAPI advice service is unavailable.',
+      detail: error.message,
     });
+  }
+});
+
+// Reports which LLM provider/model the advice endpoint is using. Never returns keys.
+app.get('/api/llm/status', async (_req, res) => {
+  const fastApiUrl = process.env.FASTAPI_URL || 'http://127.0.0.1:8000';
+  try {
+    const response = await fetch(`${fastApiUrl}/llm/health`, { signal: AbortSignal.timeout(5_000) });
+    return res.status(response.status).json(await response.json());
+  } catch (error: any) {
+    return res.status(502).json({ enabled: false, reason: error.message });
   }
 });
 

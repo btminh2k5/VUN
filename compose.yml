@@ -1,0 +1,101 @@
+# =============================================================================
+# File điều phối. Hiện chỉ có database chạy thật; frontend và lõi LLM được để
+# sẵn dưới dạng profile, bật lên khi đã đóng gói xong.
+#
+#   docker compose up -d                 # chỉ database
+#   docker compose --profile api up -d   # database + FastAPI (khi đã sẵn sàng)
+#   docker compose --profile full up -d  # thêm frontend
+#
+# Image database nằm ở database/Dockerfile (multi-stage, tự sinh SQL seed).
+# =============================================================================
+name: vietfashion
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: database/Dockerfile
+    image: vietfashion-db:local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vietfashion}
+      POSTGRES_USER: ${POSTGRES_USER:-vietfashion}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your .env file}
+    ports:
+      # Tách khỏi bản PostgreSQL đã cài sẵn trên máy ở cổng 5432.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      # PostgreSQL 18 đặt PGDATA bên dưới thư mục này.
+      - postgres_data:/var/lib/postgresql
+
+  # ---------------------------------------------------------------------------
+  # FastAPI: rule engine phối đồ (+ endpoint tư vấn /advice, mặc định LLM tắt).
+  # Chưa bật mặc định — thêm --profile api khi muốn chạy bằng container
+  # thay vì chạy uvicorn trực tiếp lúc dev.
+  # ---------------------------------------------------------------------------
+  api:
+    profiles: ["api", "full"]
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-vietfashion}
+      POSTGRES_USER: ${POSTGRES_USER:-vietfashion}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your .env file}
+      # LLM chỉ dùng cho /advice. none = không gọi API trả phí.
+      LLM_PROVIDER: ${LLM_PROVIDER:-none}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-30}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1200}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-5}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-sonnet-4.5}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+    ports:
+      - "127.0.0.1:${FASTAPI_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Frontend + Express. Chưa có Dockerfile riêng; lúc dev vẫn chạy `npm run dev`.
+  # Khi nào đóng gói xong thì tạo Dockerfile ở gốc rồi bỏ comment khối này.
+  # ---------------------------------------------------------------------------
+  # web:
+  #   profiles: ["full"]
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: production
+  #     PORT: 3000
+  #     FASTAPI_URL: http://api:8000
+  #     POSTGRES_HOST: postgres
+  #     POSTGRES_PORT: 5432
+  #     POSTGRES_DB: ${POSTGRES_DB:-vietfashion}
+  #     POSTGRES_USER: ${POSTGRES_USER:-vietfashion}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your .env file}
+  #   ports:
+  #     - "127.0.0.1:3000:3000"
+  #   depends_on:
+  #     api:
+  #       condition: service_healthy
+
+volumes:
+  postgres_data:

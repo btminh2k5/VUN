@@ -10,10 +10,11 @@ src/                    # Frontend React/TypeScript
   services/             # Gọi API
   utils/                # Logic dùng chung
 public/                 # Ảnh và tài nguyên tĩnh
-backend/app/            # API FastAPI tùy chọn
-database/               # Schema và dữ liệu SQL
+backend/app/            # FastAPI: rule engine phối đồ + endpoint tư vấn
+database/               # Schema, dữ liệu SQL và Dockerfile của database
+  Dockerfile            # Image PostgreSQL multi-stage (tự sinh SQL seed)
 server.ts               # Express + Vite dev server
-docker-compose.yml      # PostgreSQL local
+compose.yml             # Điều phối: db mặc định, api/web theo profile
 ```
 
 ## Chạy giao diện

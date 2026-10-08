@@ -1,6 +1,4 @@
 {
   "name": "VIETFASHION AI - Phối Trang Phục Truyền Thống Gen Z",
-  "description": "Ứng dụng khám phá và phối trang phục truyền thống Việt Nam theo phong cách Gen Z với hướng dẫn từng bước, hình ảnh trực quan và VietFashion Dataset chuẩn xác.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "Ứng dụng khám phá và phối trang phục truyền thống Việt Nam theo phong cách Gen Z với hướng dẫn từng bước, hình ảnh trực quan và VietFashion Dataset chuẩn xác."
 }
