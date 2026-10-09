@@ -112,22 +112,20 @@ export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
         ? [{ itemId: mainGarment.id, role: 'garment', imageUrl: mainGarment.imageUrl, zIndex: roleFallbackZ.garment, name: mainGarment.name }]
         : [];
 
-    // Chưa chọn gì -> hiển thị đúng bộ layer engine gợi ý.
-    const source = selectedAccessories.length
-      ? selectedAccessories.map((option) => {
-          const role: MockupLayer['role'] = selectionGroup(option) === 'footwear' ? 'footwear' : 'accessories';
-          const fromEngine = byId.get(option.id);
-          return {
-            itemId: option.id,
-            role,
-            imageUrl: option.imageUrl,
-            zIndex: fromEngine?.zIndex ?? roleFallbackZ[role],
-            name: option.name,
-          };
-        })
-      : engineLayers
-          .filter((layer) => layer.role !== 'garment')
-          .map((layer) => ({ ...layer, name: nameById.get(layer.itemId) }));
+    // Mockup là kết quả thao tác của người dùng, không phải preview tự động từ
+    // candidate của engine. Chưa chọn phụ kiện thì chỉ có layer áo và section
+    // mockup bên dưới sẽ được ẩn bởi điều kiện `mockupLayers.length > 1`.
+    const source = selectedAccessories.map((option) => {
+      const role: MockupLayer['role'] = selectionGroup(option) === 'footwear' ? 'footwear' : 'accessories';
+      const fromEngine = byId.get(option.id);
+      return {
+        itemId: option.id,
+        role,
+        imageUrl: option.imageUrl,
+        zIndex: fromEngine?.zIndex ?? roleFallbackZ[role],
+        name: option.name,
+      };
+    });
 
     return [...base, ...source];
   }, [engineLayers, outfit.items, mainGarment, selectedAccessories]);

@@ -125,6 +125,16 @@ def garment_color_score(garment: dict[str, Any], requested: str) -> float | None
     return 3.5
 
 
+def matches_selected_color(garment: dict[str, Any], requested: str) -> bool:
+    """Màu người dùng chọn là ràng buộc của trang phục chính, không phải gợi ý mềm.
+
+    Chỉ so tên màu đã bỏ ghi chú trong ngoặc. Vì vậy yêu cầu ``Đỏ`` không thể
+    trả áo ``Vàng`` chỉ vì vàng nằm trong bảng màu phối được với đỏ.
+    """
+    actual, wanted = bare_color(garment.get("color")), bare_color(requested)
+    return bool(actual and wanted and actual == wanted)
+
+
 def item_affinity(item: dict[str, Any], mapping: dict[str, set[str]], key: str) -> float:
     item_code = normalize(item.get("type_code"))
     normalized_key = normalize(key)
@@ -415,8 +425,9 @@ def diversify(
     """Chọn Top K từ danh sách ĐÃ sắp theo điểm, có đa dạng hoá.
 
     Chạy SAU khi chấm điểm, không phải trước — nên nó không bao giờ đảo thứ tự
-    điểm, chỉ bỏ qua ứng viên làm kết quả trùng lặp. Nếu quota làm thiếu kết quả
-    thì lượt hai lấp bằng ứng viên điểm cao nhất còn lại, để luôn trả đủ `limit`.
+    điểm, chỉ bỏ qua ứng viên làm kết quả trùng lặp. Nếu quota theo loại áo hoặc
+    phụ kiện làm thiếu kết quả, lượt hai có thể nới hai quota đó; riêng quota
+    theo CHÍNH CHIẾC ÁO luôn được giữ để tên/ảnh gợi ý không bị lặp.
 
     Không đa dạng hoá thì Top 5 dễ thành 5 biến thể của cùng một chiếc áo:
     điểm rất cao nhưng người dùng không có gì để chọn.
@@ -455,7 +466,8 @@ def diversify(
             per_accessory[accessory] = per_accessory.get(accessory, 0) + 1
         chosen.append(row)
 
-    # Lượt 2: lấp cho đủ limit nếu quota cắt quá tay.
+    # Lượt 2: nới quota loại áo/phụ kiện, nhưng tuyệt đối không dùng lại cùng
+    # chiếc áo. Có ít hơn `limit` kết quả vẫn đúng hơn việc hiện tên trùng.
     if len(chosen) < limit:
         for row in scored:
             if len(chosen) >= limit:
@@ -463,7 +475,11 @@ def diversify(
             sig = signature(row)
             if sig in seen_signature:
                 continue
+            garment_key = row["garment_key"]
+            if per_garment.get(garment_key, 0) >= max_per_garment:
+                continue
             seen_signature.add(sig)
+            per_garment[garment_key] = per_garment.get(garment_key, 0) + 1
             chosen.append(row)
 
     return chosen
@@ -477,18 +493,18 @@ def build_recommendations(
     """Pipeline:
 
         Request
-          -> Hard filter (chỉ điều kiện bắt buộc, KHÔNG dùng điểm)
+          -> Hard filter (item phải hiển thị được)
+          -> Lọc màu trang phục chính theo lựa chọn người dùng
           -> Candidate pool (toàn bộ tổ hợp hợp lệ)
           -> Chấm điểm TẤT CẢ candidate (màu / phong cách / bối cảnh / văn hoá)
           -> Weighted score (trọng số chia lại trên các chiều có dữ liệu)
           -> Diversification
           -> Top K
 
-    Điểm mấu chốt so với bản trước: không còn bước nào dùng điểm hay affinity để
-    LỌC hoặc CẮT ứng viên trước khi chấm. Trước đây pool trang phục bị lọc theo
-    màu khớp tuyệt đối và pool phụ kiện bị cắt top-6 theo affinity, nên các tiêu
-    chí đó mất hết phương sai: 120 ứng viên sinh ra thì 21 cái đồng điểm 10.0 và
-    năm kết quả hiển thị chỉ là một lát cắt tuỳ ý trong nhóm đồng điểm đó.
+    Màu trên form là lựa chọn bắt buộc của TRANG PHỤC CHÍNH. Bảng COLOR_FAMILIES
+    chỉ mô tả độ hài hoà để chấm điểm, không cho phép đổi áo đỏ thành áo vàng.
+    Phụ kiện không bị cắt trước theo affinity; mọi tổ hợp với áo đúng màu vẫn
+    được chấm đầy đủ rồi mới xếp hạng và đa dạng hoá.
 
     Dataset hiện vài chục món nên chấm toàn bộ là rẻ nhất và chính xác nhất. Nếu
     sau này pool sau hard filter lên hàng nghìn, cách tối ưu đúng là thêm bước
@@ -496,7 +512,10 @@ def build_recommendations(
     phục người dùng chọn) rồi mới chấm đầy đủ — tuyệt đối không quay lại cắt
     top-N bằng chính điểm sẽ chấm.
     """
-    garment_pool = [g for g in garments if hard_filter(g, request)]
+    garment_pool = [
+        g for g in garments
+        if hard_filter(g, request) and matches_selected_color(g, request.color)
+    ]
     if not garment_pool:
         return []
 

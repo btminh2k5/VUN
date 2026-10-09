@@ -20,6 +20,10 @@ garments = [
          image_url='/i/ay.jpg', region=None, occasion=[], style=None,
          description=None, cultural_meaning='y', cultural_notes=None, source='Nguồn B',
          type_review_status='needs_review', image_review_status='draft'),
+    dict(id=3, category='Áo dài', name='Áo dài màu vàng', color='Vàng',
+         image_url='/i/ad-vang.jpg', region='VN', occasion=['Tết'], style=['Hiện đại'],
+         description=None, cultural_meaning='z', cultural_notes=None, source='Nguồn C',
+         type_review_status='needs_review', image_review_status='draft'),
 ]
 styling = [
     dict(id=10, item_group='accessories', type_code='nonla', category='Nón lá', name='Nón lá',
@@ -102,17 +106,13 @@ assert 'None' not in blob, "lộ chuỗi 'None' ra giao diện"
 print("  OK: không in chuỗi 'None' ra bất kỳ field nào")
 
 
-# --- Hard filter không được dùng điểm/affinity ---------------------------------
-# Hồi quy: engine từng lọc trang phục theo "màu khớp tuyệt đối" và cắt phụ kiện
-# theo top-6 affinity, nên các tiêu chí đó mất hết phương sai và 21/120 ứng viên
-# đồng điểm 10.0. Giờ mọi tổ hợp hợp lệ đều được chấm.
+# --- Pool phụ kiện không được cắt trước bằng điểm ------------------------------
 print("\n--- Hard filter và độ phủ pool ---")
 import inspect
 src = inspect.getsource(E.build_recommendations)
-assert 'exact_color' not in src, "bộ lọc màu tuyệt đối đã quay lại"
 assert 'rank_item' not in src, "pre-sort phụ kiện theo affinity đã quay lại"
 assert '[:6]' not in src and '[:8]' not in src and '[:4]' not in src, "lại cắt pool bằng điểm"
-print("  OK: không còn lọc/cắt ứng viên bằng chính tiêu chí sẽ chấm")
+print("  OK: không cắt pool phụ kiện bằng affinity trước khi chấm")
 
 # Chỉ soi CODE: bỏ docstring và comment, nếu không chính lời giải thích
 # "không được dùng affinity" lại bị tính là vi phạm.
@@ -142,6 +142,18 @@ assert E.garment_color_score(fake('Trắng'), 'Đỏ') == 7.5
 assert E.garment_color_score(fake(None), 'Đỏ') is None
 print("  OK: bốn mức điểm màu đúng (10.0 / 8.5 / 7.5 / 3.5) và None khi thiếu dữ liệu")
 
+# Màu trên form là constraint của áo chính. "Cùng hệ màu" chỉ dành cho đánh
+# giá phối màu, tuyệt đối không cho áo vàng lọt vào kết quả khi chọn đỏ.
+assert res and all(
+    next(item.color for item in outfit.items if item.group == 'garment') == 'Đỏ'
+    for outfit in res
+), "chọn Đỏ vẫn trả trang phục màu khác"
+assert build_recommendations(
+    RecommendationRequest(occasion='Tết', style='Hiện đại', color='Đen'),
+    garments, styling,
+) == [], "không có áo đúng màu phải trả rỗng, không tự đổi màu"
+print("  OK: chọn màu là ràng buộc cứng; Đỏ không trả Vàng, màu không có trả rỗng")
+
 # --- Đa dạng hoá chạy SAU khi chấm, không đảo thứ tự điểm ---------------------
 print("\n--- Đa dạng hoá ---")
 rows = [{'raw_items': ({'name': f'g{i}'},), 'category': 'A' if i < 4 else 'B',
@@ -149,8 +161,8 @@ rows = [{'raw_items': ({'name': f'g{i}'},), 'category': 'A' if i < 4 else 'B',
          'total': 10 - i * 0.1} for i in range(8)]
 picked = E.diversify(rows, limit=4, max_per_category=2, max_per_accessory=2)
 assert [r['total'] for r in picked] == sorted([r['total'] for r in picked], reverse=True), "đa dạng hoá đảo thứ tự điểm"
-assert len(picked) == 4, "không trả đủ limit"
-print("  OK: giữ thứ tự điểm và vẫn trả đủ limit")
+assert len(picked) == 4, "không trả đủ limit khi có đủ áo khác nhau"
+print("  OK: giữ thứ tự điểm và trả đủ limit khi có đủ áo khác nhau")
 
 # Cùng một chiếc áo không được xuất hiện hai lần: hai gợi ý chỉ khác phụ kiện
 # trông như trùng lặp, vì Step 2 hiển thị ảnh và tên của trang phục chính.
@@ -158,7 +170,7 @@ same = [{'raw_items': ({'name': f'a{i}'},), 'category': 'A',
          'accessory_code': f'acc{i}', 'garment_key': 'G1', 'total': 10 - i * 0.1}
         for i in range(5)]
 picked = E.diversify(same, limit=5, max_per_category=5, max_per_accessory=5)
-assert len(picked) == 5, "lượt hai phải lấp cho đủ limit"
+assert len(picked) == 1, "không được dùng lại cùng một chiếc áo để lấp đủ limit"
 first_pass = E.diversify(same, limit=1, max_per_category=5, max_per_accessory=5)
 assert len(first_pass) == 1
-print("  OK: quota max_per_garment=1 chặn lặp chiếc áo, lượt hai vẫn lấp đủ limit")
+print("  OK: quota max_per_garment=1 luôn chặn tên/ảnh áo trùng ở cả hai lượt")
