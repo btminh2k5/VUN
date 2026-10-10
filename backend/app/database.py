@@ -9,16 +9,30 @@ class WardrobeRepository:
         self.pool: asyncpg.Pool | None = None
 
     async def connect(self) -> None:
-        self.pool = await asyncpg.create_pool(
-            host=os.getenv("POSTGRES_HOST", "postgres"),
-            port=int(os.getenv("POSTGRES_PORT", "5432")),
-            database=os.getenv("POSTGRES_DB", "vietfashion"),
-            user=os.getenv("POSTGRES_USER", "vietfashion"),
-            password=os.getenv("POSTGRES_PASSWORD", "123456"),
-            min_size=1,
-            max_size=5,
-            timeout=5,
-        )
+        database_url = os.getenv("DATABASE_URL")
+        ssl_mode = os.getenv("POSTGRES_SSL")
+        ssl_arg = "require" if ssl_mode in ("true", "require", "1") or (database_url and ("supabase.co" in database_url or "neon.tech" in database_url)) else None
+
+        if database_url:
+            self.pool = await asyncpg.create_pool(
+                dsn=database_url,
+                ssl=ssl_arg,
+                min_size=1,
+                max_size=5,
+                timeout=10,
+            )
+        else:
+            self.pool = await asyncpg.create_pool(
+                host=os.getenv("POSTGRES_HOST", "postgres"),
+                port=int(os.getenv("POSTGRES_PORT", "5432")),
+                database=os.getenv("POSTGRES_DB", "vietfashion"),
+                user=os.getenv("POSTGRES_USER", "vietfashion"),
+                password=os.getenv("POSTGRES_PASSWORD", "123456"),
+                ssl=ssl_arg,
+                min_size=1,
+                max_size=5,
+                timeout=10,
+            )
 
     async def close(self) -> None:
         if self.pool:
