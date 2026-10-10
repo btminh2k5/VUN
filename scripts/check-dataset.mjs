@@ -64,9 +64,12 @@ if (!fs.existsSync(datasetDir)) {
   // --- 5. Không còn dấu vết cấp thư mục theo giới tính trong CODE ---
   // Chỉ soi code và SQL. File .md được bỏ qua vì ghi chú migration cố ý nhắc
   // tới đường dẫn cũ để giải thích vì sao phải tạo lại volume database.
+  // 12_upgrade_existing_db.sql cũng được bỏ qua: nó chính là migration đổi
+  // đường dẫn cũ sang mới nên buộc phải nhắc tới 'dataset/Nu/'.
+  const migrationFile = path.join(sqlDir, '12_upgrade_existing_db.sql');
   const sources = [
     ...walk(path.join(root, 'src')).filter((f) => /\.(ts|tsx)$/.test(f)),
-    ...walk(sqlDir).filter((f) => /\.(sql|mjs|json)$/.test(f)),
+    ...walk(sqlDir).filter((f) => /\.(sql|mjs|json)$/.test(f) && f !== migrationFile),
   ];
   for (const file of sources) {
     const body = fs.readFileSync(file, 'utf8');
@@ -76,7 +79,7 @@ if (!fs.existsSync(datasetDir)) {
   }
 
   // --- 6. Dữ liệu dự phòng phải khớp số ảnh trang phục ---
-  const fallback = fs.readFileSync(path.join(root, 'src/data/vietFashionData.ts'), 'utf8');
+  const fallback = fs.readFileSync(path.join(root, 'src/data/datasetRecords.ts'), 'utf8');
   const fallbackCount = (fallback.match(/datasetPath: 'dataset\//g) || []).length;
   const garmentCount = images.filter((url) => {
     const first = url.replace('/images/dataset/', '').split('/')[0];

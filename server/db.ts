@@ -1,10 +1,4 @@
 import pg from 'pg';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const { Pool } = pg;
 
@@ -843,7 +837,7 @@ export class DatabaseService {
         max: 5
       });
 
-      this.pool.on('error', (err) => {
+      this.pool.on('error', () => {
         // Suppress unhandled errors when postgres is offline
         this.isConnected = false;
       });

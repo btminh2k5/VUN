@@ -1,4 +1,6 @@
-import { OutfitSet, OUTFIT_SETS, COLOR_OPTIONS } from '../data/vietFashionData';
+import { OutfitSet } from '../types/fashion';
+import { OUTFIT_SETS } from '../data/outfitSets';
+import { COLOR_OPTIONS } from '../data/options';
 
 export interface MatchResult {
   outfit: OutfitSet;
@@ -136,17 +138,14 @@ export function findMatchingOutfits(
     }
 
     // 3. Context Matching (+25 points)
-    let ctxMatched = false;
     if (normCtx) {
       if (outfitCtxNorm.includes(normCtx) || normCtx.includes(outfitCtxNorm)) {
         score += 25;
-        ctxMatched = true;
         reasons.push(`Phù hợp bối cảnh "${outfit.context}"`);
       } else {
         for (const [targetCtx, keywords] of Object.entries(CONTEXT_CLUSTERS)) {
           if (targetCtx === outfit.context && keywords.some((kw) => normCtx.includes(kw))) {
             score += 20;
-            ctxMatched = true;
             reasons.push(`Thích hợp cho dịp "${targetCtx}"`);
             break;
           }

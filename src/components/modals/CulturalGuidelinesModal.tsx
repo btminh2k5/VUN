@@ -1,6 +1,6 @@
 import React from 'react';
-import { X, ShieldAlert, CheckCircle, AlertTriangle, BookOpen, ExternalLink, Heart } from 'lucide-react';
-import { CULTURAL_GUIDELINES } from '../data/vietFashionData';
+import { X, ShieldAlert, CheckCircle, AlertTriangle } from 'lucide-react';
+import { CULTURAL_GUIDELINES } from '../../data/options';
 
 interface CulturalGuidelinesModalProps {
   isOpen: boolean;

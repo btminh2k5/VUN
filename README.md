@@ -153,7 +153,7 @@ Badge "đã kiểm duyệt" suy từ `review_status`, không suy từ điểm s�
 
 **2. Tư vấn phối đồ — `POST /api/ai-styling` → FastAPI `POST /advice`** *(đang TẮT ở UI)*
 
-Khối UI tư vấn trong `Step4CompleteOutfit.tsx` đang tắt bằng cờ `ENABLE_AI_ADVICE = false`
+Khối UI tư vấn trong `Step3CompleteOutfit.tsx` đang tắt bằng cờ `ENABLE_AI_ADVICE = false`
 để khỏi tốn chi phí gọi API. Backend vẫn đầy đủ; đổi cờ thành `true` là bật lại.
 
 Đây là chỗ duy nhất gọi LLM. LLM nhận outfit và điểm số mà engine đã chốt, và bị ràng buộc:

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertCircle, ArrowRight, Database, HardDrive, RotateCw, SlidersHorizontal } from 'lucide-react';
-import { OutfitSet } from '../data/vietFashionData';
+import { OutfitSet } from '../../types/fashion';
 
 interface Step2OutfitSuggestionsProps {
   outfits: OutfitSet[];

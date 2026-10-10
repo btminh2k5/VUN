@@ -4,27 +4,17 @@ import {
   Database, 
   Shirt, 
   Image as ImageIcon, 
-  FileText, 
-  Calendar, 
-  ShoppingBag, 
   ShieldCheck, 
-  CheckCircle, 
   ArrowRight, 
   Server, 
-  Cpu, 
-  User, 
   Search,
-  BookOpen,
   Sparkles,
   Layers,
   Check
 } from 'lucide-react';
-import { 
-  VIET_FASHION_ITEMS, 
-  REAL_DATASET_35_ITEMS, 
-  GarmentItem, 
-  DatasetVariantRecord 
-} from '../data/vietFashionData';
+import { GarmentItem } from '../../types/fashion';
+import { REAL_DATASET_35_ITEMS } from '../../data/datasetRecords';
+import { VIET_FASHION_ITEMS } from '../../data/garmentItems';
 
 interface VietFashionDatasetModalProps {
   isOpen: boolean;

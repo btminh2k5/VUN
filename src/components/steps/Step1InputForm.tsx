@@ -8,7 +8,7 @@ import {
   Shirt,
   Sparkles
 } from 'lucide-react';
-import { REAL_DATASET_35_ITEMS } from '../data/vietFashionData';
+import { REAL_DATASET_35_ITEMS } from '../../data/datasetRecords';
 
 // Đếm từ dữ liệu để các con số trên giao diện không lệch khi dataset đổi.
 const DATASET_IMAGE_COUNT = REAL_DATASET_35_ITEMS.length;

@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { dbService } from './src/server/db.js';
+import { dbService } from './db.js';
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 app.use(express.json());
 
 // Explicitly serve public assets (including /images/dataset/...)
-app.use(express.static(path.resolve(__dirname, 'public')));
+app.use(express.static(path.resolve(__dirname, '..', 'public')));
 
 // Database status endpoint
 app.get('/api/database/status', async (_req, res) => {
@@ -107,9 +107,9 @@ app.get('/api/llm/status', async (_req, res) => {
 
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    app.use(express.static(path.resolve(__dirname, '..', 'dist')));
     app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.resolve(__dirname, '..', 'dist', 'index.html'));
     });
   } else {
     const vite = await createViteServer({

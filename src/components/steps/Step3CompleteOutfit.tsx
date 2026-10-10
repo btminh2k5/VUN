@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Bookmark, Check, ExternalLink, Palette, RotateCw, Sparkles } from 'lucide-react';
-import { GarmentItem, OutfitSet } from '../data/vietFashionData';
-import { MockupLayer, OutfitMockup2D } from './OutfitMockup2D';
-import { fetchOutfitAdvice, OutfitAdvice } from '../services/adviceApi';
+import { GarmentItem, OutfitSet } from '../../types/fashion';
+import { MockupLayer, OutfitMockup2D } from '../common/OutfitMockup2D';
+import { fetchOutfitAdvice, OutfitAdvice } from '../../services/adviceApi';
 
 // TẮT phần tư vấn AI: mỗi lần bấm là một lần gọi API trả phí.
 // Bật lại bằng cách đổi cờ này thành true (backend /advice vẫn sẵn sàng,
 // và vẫn tự trả tư vấn theo luật nếu LLM_PROVIDER=none).
 const ENABLE_AI_ADVICE = false;
 
-interface Step4CompleteOutfitProps {
+interface Step3CompleteOutfitProps {
   outfit: OutfitSet;
   // Tiêu chí người dùng thực sự nhập ở Step 1 — chính xác hơn là đọc lại từ
   // outfit, vì outfit fallback cục bộ mang bối cảnh riêng của nó.
@@ -52,7 +52,7 @@ const FALLBACK_ACCESSORIES: AccessoryOption[] = [
   { id: 'fallback-giay-bup-be', name: 'Giày búp bê', category: 'footwear', imageUrl: '/images/dataset/footwear/giaybupbe/giaybupbe.jpg', colorHex: '#292524' },
 ];
 
-export const Step4CompleteOutfit: React.FC<Step4CompleteOutfitProps> = ({
+export const Step3CompleteOutfit: React.FC<Step3CompleteOutfitProps> = ({
   outfit,
   userQuery,
   onSaveOutfit,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Bookmark, Share2, Trash2, Check, ArrowRight, Eye, Sparkles } from 'lucide-react';
-import { OutfitSet } from '../data/vietFashionData';
+import { X, Bookmark, Share2, Trash2, Check, ArrowRight } from 'lucide-react';
+import { OutfitSet } from '../../types/fashion';
 
 interface LookbookModalProps {
   isOpen: boolean;

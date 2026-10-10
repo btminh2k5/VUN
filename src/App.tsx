@@ -5,22 +5,19 @@
 
 import React, { useEffect, useState } from 'react';
 import { Bookmark, Menu, ShieldCheck } from 'lucide-react';
-import {
-  OUTFIT_SETS,
-  REAL_DATASET_35_ITEMS,
-  COLOR_OPTIONS,
-  OutfitSet,
-  GarmentItem
-} from './data/vietFashionData';
+import { OutfitSet, GarmentItem } from './types/fashion';
+import { REAL_DATASET_35_ITEMS } from './data/datasetRecords';
+import { OUTFIT_SETS } from './data/outfitSets';
+import { COLOR_OPTIONS } from './data/options';
 import { findMatchingOutfits, MatchResult } from './utils/matchingEngine';
-import { StepHeader } from './components/StepHeader';
-import { Step1InputForm } from './components/Step1InputForm';
-import { Step2OutfitSuggestions } from './components/Step2OutfitSuggestions';
-import { Step4CompleteOutfit } from './components/Step4CompleteOutfit';
-import { VietFashionDatasetModal } from './components/VietFashionDatasetModal';
-import { LookbookModal } from './components/LookbookModal';
-import { CulturalGuidelinesModal } from './components/CulturalGuidelinesModal';
-import { CulturalAnimatedBackground } from './components/CulturalAnimatedBackground';
+import { StepHeader } from './components/steps/StepHeader';
+import { Step1InputForm } from './components/steps/Step1InputForm';
+import { Step2OutfitSuggestions } from './components/steps/Step2OutfitSuggestions';
+import { Step3CompleteOutfit } from './components/steps/Step3CompleteOutfit';
+import { VietFashionDatasetModal } from './components/modals/VietFashionDatasetModal';
+import { LookbookModal } from './components/modals/LookbookModal';
+import { CulturalGuidelinesModal } from './components/modals/CulturalGuidelinesModal';
+import { CulturalAnimatedBackground } from './components/common/CulturalAnimatedBackground';
 import { fetchRecommendations } from './services/recommendationApi';
 
 export default function App() {
@@ -226,7 +223,7 @@ export default function App() {
         )}
 
         {currentStep === 3 && (
-          <Step4CompleteOutfit
+          <Step3CompleteOutfit
             key={activeOutfit.id}
             outfit={activeOutfit}
             userQuery={{ context: selectedContext, style: selectedStyle, color: selectedColor }}

@@ -1,4 +1,6 @@
-import { COLOR_OPTIONS, GarmentItem, OUTFIT_SETS, OutfitSet } from '../data/vietFashionData';
+import { GarmentItem, OutfitSet } from '../types/fashion';
+import { OUTFIT_SETS } from '../data/outfitSets';
+import { COLOR_OPTIONS } from '../data/options';
 
 interface ApiItem {
   id: string;
